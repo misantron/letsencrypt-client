@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace LetsEncrypt\Http;
+namespace LetsEncrypt\Logger;
 
 use Spatie\Enum\Enum;
 
 /**
  * Class LogStrategy
- * @package LetsEncrypt\Http
+ * @package LetsEncrypt\Logger
  *
  * @method static self requestsOnly()
  * @method static self errorsOnly()

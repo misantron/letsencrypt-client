@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LetsEncrypt\Http;
+namespace LetsEncrypt\Logger;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;

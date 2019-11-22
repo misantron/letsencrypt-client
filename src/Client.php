@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace LetsEncrypt;
 
 use LetsEncrypt\Http\Connector;
-use LetsEncrypt\Http\Logger;
+use LetsEncrypt\Logger\Logger;
 use LetsEncrypt\Service\AccountService;
 use LetsEncrypt\Service\AuthorizationService;
 use LetsEncrypt\Service\OrderService;

@@ -6,8 +6,8 @@ namespace LetsEncrypt\Tests\Unit;
 
 use LetsEncrypt\Client;
 use LetsEncrypt\Http\Connector;
-use LetsEncrypt\Http\Logger;
-use LetsEncrypt\Http\LogStrategy;
+use LetsEncrypt\Logger\Logger;
+use LetsEncrypt\Logger\LogStrategy;
 use LetsEncrypt\Service\AccountService;
 use LetsEncrypt\Service\OrderService;
 use LetsEncrypt\Tests\TestCase;

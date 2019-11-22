@@ -11,6 +11,8 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\RequestOptions;
 use LetsEncrypt\Entity\Endpoint;
 use LetsEncrypt\Helper\Signer;
+use LetsEncrypt\Logger\Logger;
+use LetsEncrypt\Logger\LogMiddleware;
 use Psr\Http\Message\ResponseInterface;
 
 final class Connector
