@@ -12,6 +12,8 @@ use GuzzleHttp\Psr7\Response;
 
 abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
 {
+    use AssertObjectProperty;
+
     /**
      * @var MockHandler
      */

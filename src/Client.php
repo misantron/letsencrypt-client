@@ -7,10 +7,16 @@ namespace LetsEncrypt;
 use LetsEncrypt\Http\Connector;
 use LetsEncrypt\Http\Logger;
 use LetsEncrypt\Service\AccountService;
+use LetsEncrypt\Service\AuthorizationService;
 use LetsEncrypt\Service\OrderService;
 
 class Client
 {
+    /**
+     * @var Connector
+     */
+    private $connector;
+
     /**
      * @var AccountService
      */
@@ -27,19 +33,24 @@ class Client
         bool $staging = true,
         Logger $logger = null
     ) {
-        $connector = new Connector($staging, $logger);
+        $this->connector = new Connector($staging, $logger);
 
-        $this->accountService = new AccountService($connector, $accountKeysPath);
-        $this->orderService = new OrderService($connector, $certificatesPath);
+        $authorizationService = new AuthorizationService();
+        $authorizationService->setConnector($this->connector);
+
+        $this->accountService = new AccountService($accountKeysPath);
+        $this->orderService = new OrderService($authorizationService, $certificatesPath);
     }
 
     public function account(): AccountService
     {
-        return $this->accountService;
+        return $this->accountService
+            ->setConnector($this->connector);
     }
 
     public function order(): OrderService
     {
-        return $this->orderService;
+        return $this->orderService
+            ->setConnector($this->connector);
     }
 }

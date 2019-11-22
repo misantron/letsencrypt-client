@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Entity;
 
-use LetsEncrypt\Mixin\UrlEntity;
-
 final class Authorization extends Entity
 {
-    use UrlEntity;
+    use UrlAwareTrait;
 
     /**
      * @var array
@@ -29,6 +27,13 @@ final class Authorization extends Entity
      * @var bool
      */
     public $wildcard;
+
+    public function __construct(array $data, string $url)
+    {
+        parent::__construct($data);
+
+        $this->url = $url;
+    }
 
     /**
      * @param string $type

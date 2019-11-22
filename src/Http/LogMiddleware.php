@@ -7,6 +7,7 @@ namespace LetsEncrypt\Http;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LogLevel;
+
 use function GuzzleHttp\Promise\rejection_for;
 
 final class LogMiddleware
@@ -23,11 +24,11 @@ final class LogMiddleware
 
     public function __invoke(callable $handler): callable
     {
-        return function (RequestInterface $request) use ($handler) {
+        return function (RequestInterface $request, array $options) use ($handler) {
             if ($this->logger->logRequestsOnly()) {
                 $this->logRequest($request);
             }
-            return $handler($request)
+            return $handler($request, $options)
                 ->then(
                     $this->handleSuccess($request),
                     $this->handleFailure($request)

@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace LetsEncrypt\Service;
+namespace LetsEncrypt\Http;
 
-use LetsEncrypt\Http\Connector;
-
-abstract class AbstractService
+trait ConnectorAwareTrait
 {
     /**
      * @var Connector
      */
     private $connector;
 
-    public function __construct(Connector $connector)
+    public function setConnector(Connector $connector): self
     {
         $this->connector = $connector;
+
+        return $this;
     }
 
-    protected function getConnector(): Connector
+    private function getConnector(): Connector
     {
         return $this->connector;
     }

@@ -49,6 +49,25 @@ final class Signer
         return self::sign($protected, $payload, $privateKey);
     }
 
+    public static function kty(string $privateKeyPath): string
+    {
+        $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
+        if ($privateKey === false) {
+
+        }
+        $details = openssl_pkey_get_details($privateKey);
+        if ($details === false) {
+
+        }
+
+        $header = [
+            'kty' => 'RSA',
+            'n' => Base64::urlSafeEncode($details['rsa']['n']),
+            'e' => Base64::urlSafeEncode($details['rsa']['e']),
+        ];
+        return Base64::hashEncode(json_encode($header));
+    }
+
     private static function sign(array $protected, array $payload, $privateKey): array
     {
         $payloadEncoded = Base64::urlSafeEncode(str_replace('\\/', '/', json_encode($payload)));

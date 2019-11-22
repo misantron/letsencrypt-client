@@ -17,6 +17,13 @@ final class Order extends Entity
      */
     private $authorizationsData;
 
+    public function __construct(array $data, array $authorizationsData)
+    {
+        parent::__construct($data);
+
+        $this->authorizationsData = $authorizationsData;
+    }
+
     public function isIdentifiersEqual(array $subjects): bool
     {
         $identifiers = array_map(static function (array $entry) {
@@ -27,11 +34,6 @@ final class Order extends Entity
         sort($subjects, SORT_STRING);
 
         return $identifiers === $subjects;
-    }
-
-    public function setAuthorizationsData(array $data): void
-    {
-        $this->authorizationsData = $data;
     }
 
     /**

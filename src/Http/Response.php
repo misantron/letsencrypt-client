@@ -11,7 +11,6 @@ final class Response
     private const HEADER_LOCATION = 'Location';
 
     private const HTTP_STATUS_OK = 200;
-    private const HTTP_STATUS_CREATED = 201;
 
     /**
      * @var ResponseInterface
@@ -26,11 +25,6 @@ final class Response
     public function isStatusOk(): bool
     {
         return $this->origin->getStatusCode() === self::HTTP_STATUS_OK;
-    }
-
-    public function isStatusCreated(): bool
-    {
-        return $this->origin->getStatusCode() === self::HTTP_STATUS_CREATED;
     }
 
     public function getPayload(): array

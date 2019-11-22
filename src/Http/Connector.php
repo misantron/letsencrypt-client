@@ -60,9 +60,19 @@ final class Connector
         ]);
     }
 
-    public function getEndpoint(): Endpoint
+    public function getNewAccountEndpoint(): string
     {
-        return $this->endpoint;
+        return $this->endpoint->newAccount;
+    }
+
+    public function getNewOrderEndpoint(): string
+    {
+        return $this->endpoint->newOrder;
+    }
+
+    public function getKeyChangeEndpoint(): string
+    {
+        return $this->endpoint->keyChange;
     }
 
     /**

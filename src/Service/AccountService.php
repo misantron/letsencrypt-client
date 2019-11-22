@@ -8,19 +8,19 @@ use LetsEncrypt\Assert\Assert;
 use LetsEncrypt\Certificate\File;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Helper\Key;
-use LetsEncrypt\Http\Connector;
+use LetsEncrypt\Http\ConnectorAwareTrait;
 
-class AccountService extends AbstractService
+class AccountService
 {
+    use ConnectorAwareTrait;
+
     /**
      * @var string
      */
     private $keysPath;
 
-    public function __construct(Connector $connector, string $keysPath)
+    public function __construct(string $keysPath)
     {
-        parent::__construct($connector);
-
         Assert::directoryExists($keysPath);
 
         $this->keysPath = $keysPath;
@@ -60,7 +60,33 @@ class AccountService extends AbstractService
             $this->getPrivateKeyPath()
         );
 
-        return new Account($response->getPayload());
+        $state = clone $account;
+
+        return new Account(
+            $response->getPayload(),
+            $state->getUrl(),
+            $state->getPrivateKeyPath()
+        );
+    }
+
+    public function deactivate(Account $account): Account
+    {
+        $payload = ['status' => 'deactivated'];
+
+        $response = $this->getConnector()->requestWithKIDSigned(
+            $account->getUrl(),
+            $account->getUrl(),
+            $payload,
+            $this->getPrivateKeyPath()
+        );
+
+        $state = clone $account;
+
+        return new Account(
+            $response->getPayload(),
+            $state->getUrl(),
+            $state->getPrivateKeyPath()
+        );
     }
 
     private function createAccount(array $emails): string
@@ -75,7 +101,7 @@ class AccountService extends AbstractService
         ];
 
         $response = $this->getConnector()->requestWithJWKSigned(
-            $this->getConnector()->getEndpoint()->newAccount,
+            $this->getConnector()->getNewAccountEndpoint(),
             $payload,
             $this->getPrivateKeyPath()
         );
@@ -90,7 +116,7 @@ class AccountService extends AbstractService
         ];
 
         $response = $this->getConnector()->requestWithJWKSigned(
-            $this->getConnector()->getEndpoint()->newAccount,
+            $this->getConnector()->getNewAccountEndpoint(),
             $payload,
             $this->getPrivateKeyPath()
         );
@@ -109,10 +135,11 @@ class AccountService extends AbstractService
             $this->getPrivateKeyPath()
         );
 
-        $account = new Account($response->getPayload());
-        $account->setUrl($url);
-
-        return $account;
+        return new Account(
+            $response->getPayload(),
+            $url,
+            $this->getPrivateKeyPath()
+        );
     }
 
     private function getPrivateKeyPath(): string

@@ -4,30 +4,36 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Service;
 
+use GuzzleHttp\Exception\TransferException;
 use LetsEncrypt\Assert\Assert;
 use LetsEncrypt\Certificate\Certificate;
 use LetsEncrypt\Certificate\File;
 use LetsEncrypt\Entity\Account;
-use LetsEncrypt\Entity\Authorization;
-use LetsEncrypt\Entity\Challenge;
 use LetsEncrypt\Entity\Order;
 use LetsEncrypt\Helper\Base64;
 use LetsEncrypt\Helper\Key;
-use LetsEncrypt\Http\Connector;
+use LetsEncrypt\Helper\Signer;
+use LetsEncrypt\Http\ConnectorAwareTrait;
 
-class OrderService extends AbstractService
+class OrderService
 {
+    use ConnectorAwareTrait;
+
+    /**
+     * @var AuthorizationService
+     */
+    private $authorizationService;
+
     /**
      * @var string
      */
     private $filesPath;
 
-    public function __construct(Connector $connector, string $filesPath)
+    public function __construct(AuthorizationService $authorizationService, string $filesPath)
     {
-        parent::__construct($connector);
-
         Assert::directoryExists($filesPath);
 
+        $this->authorizationService = $authorizationService;
         $this->filesPath = $filesPath;
     }
 
@@ -52,20 +58,19 @@ class OrderService extends AbstractService
             'notAfter' => $certificate->getNotAfter(),
         ];
 
-        $response = $this->getConnector()->requestWithKIDSigned(
-            $account->getUrl(),
-            $this->getConnector()->getEndpoint()->newOrder,
-            $payload,
-            $account->getPrivateKeyPath()
-        );
-
-        if (!$response->isStatusCreated()) {
+        try {
+            $response = $this->getConnector()->requestWithKIDSigned(
+                $account->getUrl(),
+                $this->getConnector()->getNewOrderEndpoint(),
+                $payload,
+                $account->getPrivateKeyPath()
+            );
+        } catch (TransferException $e) {
             $this->cleanupFiles($basename);
-            throw new \RuntimeException();
+            throw new \RuntimeException('Unable to create order');
         }
 
-        $orderUrl = $response->getLocation();
-        file_put_contents($this->getOrderFilePath($basename), $orderUrl);
+        file_put_contents($this->getOrderFilePath($basename), $response->getLocation());
 
         if ($certificate->getKey()->isRSA()) {
             Key::rsa(
@@ -81,12 +86,12 @@ class OrderService extends AbstractService
             );
         }
 
-        $order = new Order($response->getPayload());
+        $data = $response->getPayload();
 
-        $authorizations = $this->getAuthorizations($order->authorizations);
-        $order->setAuthorizationsData($authorizations);
-
-        return $order;
+        return new Order(
+            $data,
+            $this->authorizationService->getAuthorizations($data['authorizations'])
+        );
     }
 
     public function get(string $basename, array $subjects): Order
@@ -96,9 +101,13 @@ class OrderService extends AbstractService
 
         $orderUrl = file_get_contents($orderFilePath);
 
-        $response = $this->getConnector()->get($orderUrl);
+        $data = $this->getConnector()->get($orderUrl)->getPayload();
 
-        $order = new Order($response->getPayload());
+        $order = new Order(
+            $data,
+            $this->authorizationService->getAuthorizations($data['authorizations'])
+        );
+
         if ($order->isInvalid()) {
             throw new \RuntimeException('Order has invalid status');
         }
@@ -106,13 +115,10 @@ class OrderService extends AbstractService
             throw new \RuntimeException('Order data is invalid - subjects are not equal');
         }
 
-        $authorizations = $this->getAuthorizations($order->authorizations);
-        $order->setAuthorizationsData($authorizations);
-
         return $order;
     }
 
-    public function getOrCreate(Account $account, string $basename, array $subjects, Certificate $certificate)
+    public function getOrCreate(Account $account, string $basename, array $subjects, Certificate $certificate): Order
     {
         try {
             $order = $this->get($basename, $subjects);
@@ -124,126 +130,24 @@ class OrderService extends AbstractService
         return $order;
     }
 
-    public function getPendingAuthorizations(string $type, Account $account, Order $order): array
+    public function getPendingAuthorizations(Account $account, Order $order, string $type): array
     {
-        $authorizations = [];
-
-        $privateKey = openssl_pkey_get_private('file://' . $account->getPrivateKeyPath());
-        if ($privateKey === false) {
-
-        }
-        $details = openssl_pkey_get_details($privateKey);
-        if ($details === false) {
-
-        }
-
-        $header = [
-            'e' => Base64::urlSafeEncode($details['rsa']['e']),
-            'kty' => 'RSA',
-            'n' => Base64::urlSafeEncode($details['rsa']['n']),
-        ];
-        $digest = Base64::hashEncode(json_encode($header));
-
-        foreach ($order->getPendingAuthorizations() as $authorization) {
-            $challenge = $authorization->getChallenge($type);
-            if ($challenge->isPending()) {
-                $keyAuthorization = $challenge->token . '.' . $digest;
-                switch (true) {
-                    case $challenge->isHttp():
-                        $authorizations[] = [
-                            'type' => $type,
-                            'identifier' => $authorization->identifier['value'],
-                            'filename' => $challenge->token,
-                            'content' => $keyAuthorization,
-                        ];
-                        break;
-                    case $challenge->isDns():
-                        $dnsDigest = Base64::hashEncode($keyAuthorization);
-                        $authorizations[] = [
-                            'type' => $type,
-                            'identifier' => $authorization->identifier['value'],
-                            'DNSDigest' => $dnsDigest,
-                        ];
-                        break;
-                }
-            }
-        }
-
-        return $authorizations;
+        return $this->authorizationService->getPendingAuthorizations(
+            Signer::kty($account->getPrivateKeyPath()),
+            $order->getPendingAuthorizations(),
+            $type
+        );
     }
 
     public function verifyPendingAuthorization(string $identifier, string $type, Account $account, Order $order): bool
     {
-        $privateKey = openssl_pkey_get_private('file://' . $account->getPrivateKeyPath());
-        if ($privateKey === false) {
-
-        }
-        $details = openssl_pkey_get_details($privateKey);
-        if ($details === false) {
-
-        }
-
-        $header = [
-            'e' => Base64::urlSafeEncode($details['rsa']['e']),
-            'kty' => 'RSA',
-            'n' => Base64::urlSafeEncode($details['rsa']['n']),
-        ];
-        $digest = Base64::hashEncode(json_encode($header));
-
-        foreach ($order->getAuthorizations() as $authorization) {
-            if ($authorization->identifier['value'] === $identifier && $authorization->isPending()) {
-                $challenge = $authorization->getChallenge($type);
-                if ($challenge->isPending()) {
-                    $keyAuthorization = $challenge->token . '.' . $digest;
-
-                    switch (true) {
-                        case $challenge->isHttp():
-                            if ($this->verifyHttpChallenge($identifier, $challenge->token, $keyAuthorization)) {
-                                $payload = [
-                                    'keyAuthorization' => $keyAuthorization,
-                                ];
-                                $response = $this->getConnector()->requestWithKIDSigned(
-                                    $account->getUrl(),
-                                    $challenge->getUrl(),
-                                    $payload,
-                                    $account->getPrivateKeyPath()
-                                );
-                                if ($response->isStatusOk()) {
-                                    while ($authorization->isPending()) {
-                                        sleep(1);
-                                        $authorization = $this->updateAuthorization($authorization->getUrl());
-                                    }
-                                    return true;
-                                }
-                            }
-                            break;
-                        case $challenge->isDns():
-                            $dnsDigest = Base64::hashEncode($keyAuthorization);
-                            if ($this->verifyDnsChallenge($identifier, $dnsDigest)) {
-                                $payload = [
-                                    'keyAuthorization' => $keyAuthorization,
-                                ];
-                                $response = $this->getConnector()->requestWithKIDSigned(
-                                    $account->getUrl(),
-                                    $challenge->getUrl(),
-                                    $payload,
-                                    $account->getPrivateKeyPath()
-                                );
-                                if ($response->isStatusOk()) {
-                                    while ($authorization->isPending()) {
-                                        sleep(1);
-                                        $authorization = $this->updateAuthorization($authorization->getUrl());
-                                    }
-                                    return true;
-                                }
-                            }
-                            break;
-                    }
-                }
-            }
-        }
-
-        return false;
+        return $this->authorizationService->verifyPendingAuthorization(
+            $account,
+            Signer::kty($account->getPrivateKeyPath()),
+            $order->getAuthorizations(),
+            $identifier,
+            $type
+        );
     }
 
     public function finalize(Account $account, Order $order, string $csr = ''): Order
@@ -265,58 +169,12 @@ class OrderService extends AbstractService
             $account->getPrivateKeyPath()
         );
 
-        $order = new Order($response->getPayload());
-
-        $authorizations = $this->getAuthorizations($order->authorizations);
-        $order->setAuthorizationsData($authorizations);
-
-        return $order;
-    }
-
-    private function getAuthorizations(array $urls): array
-    {
-        $authorizations = [];
-        foreach ($urls as $url) {
-            $authorizations[] = $this->updateAuthorization($url);
-        }
-        return $authorizations;
-    }
-
-    private function updateAuthorization(string $url): Authorization
-    {
-        $response = $this->getConnector()->get($url);
-
-        $authorization = new Authorization($response->getPayload());
-        $authorization->setUrl($url);
-
-        return $authorization;
-    }
-
-    private function verifyHttpChallenge(string $domain, string $token, string $key): bool
-    {
-        $response = $this->getConnector()->get($domain . '/.well-known/acme-challenge/' . $token);
-
-        return $response->getRawBody() === $key;
-    }
-
-    private function verifyDnsChallenge(string $domain, string $dnsDigest): bool
-    {
-        $query = [
-            'type' => 'TXT',
-            'name' => '_acme-challenge.' . $domain,
-        ];
-
-        $response = $this->getConnector()->get(Challenge::DNS_VERIFY_URI . '?' . http_build_query($query));
         $data = $response->getPayload();
 
-        if ($data['Status'] === 0 && isset($data['Answer'])) {
-            foreach ($data['Answer'] as $answer) {
-                if ($answer['type'] === 16 && $answer['data'] === $dnsDigest) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return new Order(
+            $data,
+            $this->authorizationService->getAuthorizations($data['authorizations'])
+        );
     }
 
     private function cleanupFiles(string $basename): void

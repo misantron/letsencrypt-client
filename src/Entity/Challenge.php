@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Entity;
 
-use LetsEncrypt\Mixin\UrlEntity;
-
 final class Challenge extends Entity
 {
-    use UrlEntity;
+    use UrlAwareTrait;
 
     private const TYPE_HTTP = 'http-01';
     private const TYPE_DNS = 'dns-01';

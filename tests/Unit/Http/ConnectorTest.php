@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Tests\Unit\Http;
 
+use LetsEncrypt\Entity\Endpoint;
 use LetsEncrypt\Http\Connector;
 use LetsEncrypt\Tests\ApiClientTestCase;
 
@@ -15,8 +16,8 @@ class ConnectorTest extends ApiClientTestCase
 
         $connector = new Connector(true, null, $this->getHttpClientMock());
 
-        $this->assertSame('https://example.com/acme/new-nonce', $connector->getEndpoint()->newNonce);
-        $this->assertSame('https://example.com/acme/new-account', $connector->getEndpoint()->newAccount);
-        $this->assertSame('https://example.com/acme/new-order', $connector->getEndpoint()->newOrder);
+        $this->assertPropertyInstanceOf(Endpoint::class, 'endpoint', $connector);
+        $this->assertSame('https://example.com/acme/new-account', $connector->getNewAccountEndpoint());
+        $this->assertSame('https://example.com/acme/new-order', $connector->getNewOrderEndpoint());
     }
 }
