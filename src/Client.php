@@ -55,6 +55,6 @@ class Client
 
     public function order(): OrderService
     {
-        return $this->orderService;
+        return $this->orderService->setConnector($this->connector);
     }
 }

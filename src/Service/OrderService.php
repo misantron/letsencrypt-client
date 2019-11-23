@@ -34,8 +34,6 @@ class OrderService
     {
         Assert::directory($filesPath);
 
-        $this->connector = $authorizationService->connector;
-
         $this->authorizationService = $authorizationService;
         $this->filesPath = $filesPath;
     }
