@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace LetsEncrypt\Service;
 
 use GuzzleHttp\Exception\TransferException;
-use LetsEncrypt\Assert\Assert;
 use LetsEncrypt\Certificate\Certificate;
 use LetsEncrypt\Certificate\File;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Order;
-use LetsEncrypt\Helper\Base64;
-use LetsEncrypt\Helper\Key;
-use LetsEncrypt\Helper\Signer;
+use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
+use LetsEncrypt\Helper\FileSystem;
 use LetsEncrypt\Http\ConnectorAwareTrait;
+use LetsEncrypt\Http\Response;
+use Webmozart\Assert\Assert;
 
 class OrderService
 {
     use ConnectorAwareTrait;
+    use KeyGeneratorAwareTrait;
 
     /**
      * @var AuthorizationService
@@ -31,7 +32,9 @@ class OrderService
 
     public function __construct(AuthorizationService $authorizationService, string $filesPath)
     {
-        Assert::directoryExists($filesPath);
+        Assert::directory($filesPath);
+
+        $this->connector = $authorizationService->connector;
 
         $this->authorizationService = $authorizationService;
         $this->filesPath = $filesPath;
@@ -41,9 +44,12 @@ class OrderService
     {
         $certificateBasePath = $this->getCertificateBasePath($basename);
 
-        if (!mkdir($certificateBasePath, 0755) && !is_dir($certificateBasePath)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $certificateBasePath));
+        if (!mkdir($certificateBasePath, 0755)) {
+            throw new \RuntimeException('Unable to create certificate directory: ' . $certificateBasePath);
         }
+
+        Assert::directory($certificateBasePath);
+        Assert::writable($certificateBasePath);
 
         $identifiers = array_map(static function (string $subject) {
             return [
@@ -59,9 +65,9 @@ class OrderService
         ];
 
         try {
-            $response = $this->getConnector()->requestWithKIDSigned(
+            $response = $this->connector->signedKIDRequest(
                 $account->getUrl(),
-                $this->getConnector()->getNewOrderEndpoint(),
+                $this->connector->getNewOrderEndpoint(),
                 $payload,
                 $account->getPrivateKeyPath()
             );
@@ -70,43 +76,50 @@ class OrderService
             throw new \RuntimeException('Unable to create order');
         }
 
-        file_put_contents($this->getOrderFilePath($basename), $response->getLocation());
+        $orderUrl = $response->getLocation();
+
+        try {
+            FileSystem::writeFileContent(
+                $this->getOrderFilePath($basename),
+                $orderUrl
+            );
+        } catch (\Throwable $e) {
+
+        }
 
         if ($certificate->getKey()->isRSA()) {
-            Key::rsa(
+            $this->keyGenerator->rsa(
                 $this->getPrivateKeyPath($basename),
                 $this->getPublicKeyPath($basename),
                 $certificate->getKey()->getLength()
             );
         } elseif ($certificate->getKey()->isEC()) {
-            Key::ec(
+            $this->keyGenerator->ec(
                 $this->getPrivateKeyPath($basename),
                 $this->getPublicKeyPath($basename),
                 $certificate->getKey()->getAlgorithm()
             );
         }
 
-        $data = $response->getPayload();
-
-        return new Order(
-            $data,
-            $this->authorizationService->getAuthorizations($data['authorizations'])
-        );
+        return $this->createOrderFromResponse($response, $orderUrl);
     }
 
     public function get(string $basename, array $subjects): Order
     {
         $orderFilePath = $this->getOrderFilePath($basename);
+
         Assert::fileExists($orderFilePath);
+        Assert::readable($orderFilePath);
 
-        $orderUrl = file_get_contents($orderFilePath);
+        try {
+            $orderUrl = FileSystem::readFileContent($orderFilePath);
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Unable to get order url');
+        }
 
-        $data = $this->getConnector()->get($orderUrl)->getPayload();
+        $response = $this->connector->get($orderUrl);
 
-        $order = new Order(
-            $data,
-            $this->authorizationService->getAuthorizations($data['authorizations'])
-        );
+        $order = $this->createOrderFromResponse($response, $orderUrl);
 
         if ($order->isInvalid()) {
             throw new \RuntimeException('Order has invalid status');
@@ -132,49 +145,104 @@ class OrderService
 
     public function getPendingAuthorizations(Account $account, Order $order, string $type): array
     {
-        return $this->authorizationService->getPendingAuthorizations(
-            Signer::kty($account->getPrivateKeyPath()),
-            $order->getPendingAuthorizations(),
-            $type
-        );
+        $digest = $this->connector->getSigner()->kty($account->getPrivateKeyPath());
+        $authorizations = $order->getPendingAuthorizations();
+
+        return $this->authorizationService->getPendingAuthorizations($digest, $authorizations, $type);
     }
 
     public function verifyPendingAuthorization(string $identifier, string $type, Account $account, Order $order): bool
     {
-        return $this->authorizationService->verifyPendingAuthorization(
-            $account,
-            Signer::kty($account->getPrivateKeyPath()),
-            $order->getAuthorizations(),
-            $identifier,
-            $type
-        );
+        $authorizations = $order->getAuthorizations();
+
+        return $this->authorizationService->verifyPendingAuthorization($account, $authorizations, $identifier, $type);
     }
 
-    public function finalize(Account $account, Order $order, string $csr = ''): Order
+    public function getCertificate(Account $account, Order $order, string $basename, string $csr = ''): void
     {
-        if (!$order->isPending() && !$order->isReady()) {
-
+        if ($order->isPending() || $order->isReady()) {
+            $order = $this->finalize($account, $order, $csr);
         }
-        if (!$order->allAuthorizationsValid()) {
 
+        while ($order->isProcessing()) {
+            sleep(5);
+            $response = $this->connector->get($order->getUrl());
+            $order = $this->createOrderFromResponse($response, $order->getUrl());
         }
+
+        if (!$order->isValid()) {
+            throw new \RuntimeException('Order status is invalid');
+        }
+
+        $response = $this->connector->signedKIDRequest(
+            $account->getUrl(),
+            $order->certificate,
+            [],
+            $account->getPrivateKeyPath()
+        );
+
+        $certificates = $this->extractCertificates($response->getRawContent());
+
+        if (isset($certificates[File::CERTIFICATE])) {
+            FileSystem::writeFileContent(
+                $this->getCertificatePath($basename),
+                $certificates[File::CERTIFICATE]
+            );
+        }
+        if (isset($certificates[File::FULL_CHAIN_CERTIFICATE])) {
+            FileSystem::writeFileContent(
+                $this->getFullChainCertificatePath($basename),
+                $certificates[File::FULL_CHAIN_CERTIFICATE]
+            );
+        }
+    }
+
+    private function extractCertificates(string $content): array
+    {
+        $pattern = '~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i';
+
+        $files = [];
+
+        if (preg_match_all($pattern, $content, $matches) !== false) {
+            $files[File::CERTIFICATE] = $matches[0][0];
+
+            $partsCount = count($matches[0]);
+
+            if ($partsCount > 1) {
+                $fullChainContent = '';
+                for ($i = 1; $i < $partsCount; ++$i)  {
+                    $fullChainContent .= PHP_EOL . $matches[0][$i];
+                }
+
+                $files[File::FULL_CHAIN_CERTIFICATE] = $fullChainContent;
+            }
+        }
+
+        return $files;
+    }
+
+    private function finalize(Account $account, Order $order, string $csr = ''): Order
+    {
         $payload = [
-            'csr' => Base64::urlSafeEncode(base64_decode($csr)),
+            'csr' => $this->connector->getSigner()->getBase64Encoder()->encode(base64_decode($csr)),
         ];
 
-        $response = $this->getConnector()->requestWithKIDSigned(
+        $response = $this->connector->signedKIDRequest(
             $account->getUrl(),
             $order->finalize,
             $payload,
             $account->getPrivateKeyPath()
         );
 
-        $data = $response->getPayload();
+        return $this->createOrderFromResponse($response, $order->getUrl());
+    }
 
-        return new Order(
-            $data,
-            $this->authorizationService->getAuthorizations($data['authorizations'])
-        );
+    private function createOrderFromResponse(Response $response, string $url): Order
+    {
+        $data = $response->getDecodedContent();
+        $authorizationsData = $this->authorizationService->getAuthorizations($data['authorizations']);
+
+        return new Order($data, $authorizationsData, $url);
     }
 
     private function cleanupFiles(string $basename): void
@@ -208,5 +276,15 @@ class OrderService
     private function getPublicKeyPath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . File::PUBLIC_KEY;
+    }
+
+    public function getCertificatePath(string $basename): string
+    {
+        return $this->getCertificateBasePath($basename) . File::CERTIFICATE;
+    }
+
+    public function getFullChainCertificatePath(string $basename): string
+    {
+        return $this->getCertificateBasePath($basename) . File::FULL_CHAIN_CERTIFICATE;
     }
 }

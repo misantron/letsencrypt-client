@@ -48,11 +48,11 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
     }
 
     protected function appendResponseFixture(
-        string $name,
+        string $name = null,
         int $status = 200,
         array $headers = ['Content-Type' => 'application/json']
     ): void {
-        $content = file_get_contents(__DIR__ . '/fixtures/' . $name . '.json');
+        $content = $name === null ? '' : file_get_contents(__DIR__ . '/fixtures/' . $name . '.json');
         $response = new Response($status, $headers, $content);
 
         $this->mockHandler->append($response);

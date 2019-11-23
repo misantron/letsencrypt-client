@@ -7,15 +7,15 @@ namespace LetsEncrypt\Helper;
 use LetsEncrypt\Enum\ECKeyAlgorithm;
 use LetsEncrypt\Enum\RSAKeyLength;
 
-final class Key
+final class KeyGenerator
 {
-    public static function rsa(string $privateKeyPath, string $publicKeyPath, RSAKeyLength $length = null): void
+    public function rsa(string $privateKeyPath, string $publicKeyPath, RSAKeyLength $length = null): void
     {
         if ($length === null) {
             $length = RSAKeyLength::bit2048();
         }
 
-        self::key(
+        $this->key(
             [
                 'private_key_type' => OPENSSL_KEYTYPE_RSA,
                 'private_key_bits' => (int) $length->getValue(),
@@ -25,13 +25,13 @@ final class Key
         );
     }
 
-    public static function ec(string $privateKeyPath, string $publicKeyPath, ECKeyAlgorithm $type = null): void
+    public function ec(string $privateKeyPath, string $publicKeyPath, ECKeyAlgorithm $type = null): void
     {
         if ($type === null) {
             $type = ECKeyAlgorithm::prime256v1();
         }
 
-        self::key(
+        $this->key(
             [
                 'private_key_type' => OPENSSL_KEYTYPE_EC,
                 'curve_name' => $type->getValue(),
@@ -41,7 +41,7 @@ final class Key
         );
     }
 
-    private static function key(array $config, string $privateKeyPath, string $publicKeyPath): void
+    private function key(array $config, string $privateKeyPath, string $publicKeyPath): void
     {
         $res = openssl_pkey_new($config);
         if ($res === false) {
@@ -65,8 +65,8 @@ final class Key
 
         }
 
-        file_put_contents($privateKeyPath, $privateKey);
-        file_put_contents($publicKeyPath, $details['key']);
+        FileSystem::writeFileContent($privateKeyPath, $privateKey);
+        FileSystem::writeFileContent($publicKeyPath, $details['key']);
 
         openssl_pkey_free($res);
     }

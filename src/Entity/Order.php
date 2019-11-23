@@ -6,10 +6,31 @@ namespace LetsEncrypt\Entity;
 
 final class Order extends Entity
 {
+    use UrlAwareTrait;
+
+    /**
+     * @var string
+     */
     public $expires;
+
+    /**
+     * @var array
+     */
     public $identifiers;
+
+    /**
+     * @var array
+     */
     public $authorizations;
+
+    /**
+     * @var string
+     */
     public $finalize;
+
+    /**
+     * @var string
+     */
     public $certificate;
 
     /**
@@ -17,11 +38,12 @@ final class Order extends Entity
      */
     private $authorizationsData;
 
-    public function __construct(array $data, array $authorizationsData)
+    public function __construct(array $data, array $authorizationsData, string $url)
     {
         parent::__construct($data);
 
         $this->authorizationsData = $authorizationsData;
+        $this->url = $url;
     }
 
     public function isIdentifiersEqual(array $subjects): bool

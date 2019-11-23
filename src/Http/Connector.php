@@ -11,6 +11,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\RequestOptions;
 use LetsEncrypt\Entity\Endpoint;
 use LetsEncrypt\Helper\Signer;
+use LetsEncrypt\Helper\SignerInterface;
 use LetsEncrypt\Logger\Logger;
 use LetsEncrypt\Logger\LogMiddleware;
 use Psr\Http\Message\ResponseInterface;
@@ -25,9 +26,14 @@ final class Connector
     private const DIRECTORY_ENDPOINT = 'directory';
 
     /**
-     * @var Client
+     * @var ClientInterface
      */
     private $client;
+
+    /**
+     * @var SignerInterface
+     */
+    private $signer;
 
     /**
      * @var Endpoint
@@ -39,11 +45,17 @@ final class Connector
      */
     private $nonce;
 
-    public function __construct(bool $staging, Logger $logger = null, ClientInterface $client = null)
-    {
+    public function __construct(
+        bool $staging,
+        Logger $logger = null,
+        ClientInterface $client = null,
+        SignerInterface $signer = null
+    ) {
         $this->client = $client ?? $this->createClient($staging, $logger);
+        $this->signer = $signer ?? Signer::createWithBase64SafeEncoder();
 
         $this->getEndpoints();
+        $this->getNonce();
     }
 
     private function createClient(bool $staging, Logger $logger = null): ClientInterface
@@ -60,6 +72,11 @@ final class Connector
                 'Accept' => 'application/json',
             ],
         ]);
+    }
+
+    public function getSigner(): Signer
+    {
+        return $this->signer;
     }
 
     public function getNewAccountEndpoint(): string
@@ -83,9 +100,9 @@ final class Connector
      * @param string $privateKeyPath
      * @return Response
      */
-    public function requestWithJWKSigned(string $url, array $payload, string $privateKeyPath): Response
+    public function signedJWKRequest(string $url, array $payload, string $privateKeyPath): Response
     {
-        $sign = Signer::jwk($payload, $url, $this->nonce, $privateKeyPath);
+        $sign = $this->signer->jwk($payload, $url, $this->nonce, $privateKeyPath);
 
         return $this->request('POST', $url, $sign);
     }
@@ -97,9 +114,9 @@ final class Connector
      * @param string $privateKeyPath
      * @return Response
      */
-    public function requestWithKIDSigned(string $kid, string $url, array $payload, string $privateKeyPath): Response
+    public function signedKIDRequest(string $kid, string $url, array $payload, string $privateKeyPath): Response
     {
-        $sign = Signer::kid($payload, $kid, $url, $this->nonce, $privateKeyPath);
+        $sign = $this->signer->kid($payload, $kid, $url, $this->nonce, $privateKeyPath);
 
         return $this->request('POST', $url, $sign);
     }
@@ -113,7 +130,7 @@ final class Connector
     {
         $response = $this->request('GET', self::DIRECTORY_ENDPOINT);
 
-        $this->endpoint = new Endpoint($response->getPayload());
+        $this->endpoint = new Endpoint($response->getDecodedContent());
     }
 
     private function getNonce(): void

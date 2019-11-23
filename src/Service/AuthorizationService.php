@@ -6,13 +6,22 @@ namespace LetsEncrypt\Service;
 
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Authorization;
-use LetsEncrypt\Entity\Challenge;
-use LetsEncrypt\Helper\Base64;
 use LetsEncrypt\Http\ConnectorAwareTrait;
+use LetsEncrypt\Http\GooglePublicDNS;
 
 class AuthorizationService
 {
     use ConnectorAwareTrait;
+
+    /**
+     * @var GooglePublicDNS
+     */
+    private $googlePublicDNS;
+
+    public function __construct()
+    {
+        $this->googlePublicDNS = new GooglePublicDNS();
+    }
 
     public function getAuthorizations(array $urls): array
     {
@@ -47,7 +56,7 @@ class AuthorizationService
                         ];
                         break;
                     case $challenge->isDns():
-                        $dnsDigest = Base64::hashEncode($keyAuthorization);
+                        $dnsDigest = $this->connector->getSigner()->getBase64Encoder()->hashEncode($keyAuthorization);
                         $pendingAuthorizations[] = [
                             'type' => $type,
                             'identifier' => $authorization->identifier['value'],
@@ -63,7 +72,6 @@ class AuthorizationService
 
     /**
      * @param Account $account
-     * @param string $digest
      * @param Authorization[] $authorizations
      * @param string $identifier
      * @param string $type
@@ -71,11 +79,12 @@ class AuthorizationService
      */
     public function verifyPendingAuthorization(
         Account $account,
-        string $digest,
         array $authorizations,
         string $identifier,
         string $type
     ): bool {
+        $digest = $this->connector->getSigner()->kty($account->getPrivateKeyPath());
+
         foreach ($authorizations as $authorization) {
             if ($authorization->identifier['value'] === $identifier && $authorization->isPending()) {
                 $challenge = $authorization->getChallenge($type);
@@ -88,7 +97,7 @@ class AuthorizationService
                                 $payload = [
                                     'keyAuthorization' => $keyAuthorization,
                                 ];
-                                $response = $this->getConnector()->requestWithKIDSigned(
+                                $response = $this->connector->signedKIDRequest(
                                     $account->getUrl(),
                                     $challenge->getUrl(),
                                     $payload,
@@ -104,12 +113,12 @@ class AuthorizationService
                             }
                             break;
                         case $challenge->isDns():
-                            $dnsDigest = Base64::hashEncode($keyAuthorization);
+                            $dnsDigest = $this->connector->getSigner()->getBase64Encoder()->hashEncode($keyAuthorization);
                             if ($this->verifyDnsChallenge($identifier, $dnsDigest)) {
                                 $payload = [
                                     'keyAuthorization' => $keyAuthorization,
                                 ];
-                                $response = $this->getConnector()->requestWithKIDSigned(
+                                $response = $this->connector->signedKIDRequest(
                                     $account->getUrl(),
                                     $challenge->getUrl(),
                                     $payload,
@@ -134,35 +143,22 @@ class AuthorizationService
 
     private function verifyHttpChallenge(string $domain, string $token, string $key): bool
     {
-        $response = $this->getConnector()->get($domain . '/.well-known/acme-challenge/' . $token);
+        $response = $this->connector->get($domain . '/.well-known/acme-challenge/' . $token);
 
-        return $response->getRawBody() === $key;
+        return $response->getRawContent() === $key;
     }
 
     private function verifyDnsChallenge(string $domain, string $dnsDigest): bool
     {
-        $query = [
-            'type' => 'TXT',
-            'name' => '_acme-challenge.' . $domain,
-        ];
-
-        $response = $this->getConnector()->get(Challenge::DNS_VERIFY_URI . '?' . http_build_query($query));
-        $data = $response->getPayload();
-
-        if ($data['Status'] === 0 && isset($data['Answer'])) {
-            foreach ($data['Answer'] as $answer) {
-                if ($answer['type'] === 16 && $answer['data'] === $dnsDigest) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return $this->googlePublicDNS
+            ->setConnector($this->connector)
+            ->verify($domain, $dnsDigest);
     }
 
     private function updateAuthorization(string $url): Authorization
     {
-        $response = $this->getConnector()->get($url);
+        $response = $this->connector->get($url);
 
-        return new Authorization($response->getPayload(), $url);
+        return new Authorization($response->getDecodedContent(), $url);
     }
 }

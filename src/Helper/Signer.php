@@ -4,9 +4,29 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Helper;
 
-final class Signer
+final class Signer implements SignerInterface
 {
-    public static function jwk(array $payload, string $url, string $nonce, string $privateKeyPath): array
+    /**
+     * @var Base64SafeEncoder
+     */
+    private $base64Encoder;
+
+    public function __construct(Base64SafeEncoder $base64Encoder)
+    {
+        $this->base64Encoder = $base64Encoder;
+    }
+
+    public static function createWithBase64SafeEncoder(): self
+    {
+        return new static(new Base64SafeEncoder());
+    }
+
+    public function getBase64Encoder(): Base64SafeEncoder
+    {
+        return $this->base64Encoder;
+    }
+
+    public function jwk(array $payload, string $url, string $nonce, string $privateKeyPath): array
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
         if ($privateKey === false) {
@@ -22,17 +42,17 @@ final class Signer
             'alg' => 'RS256',
             'jwk' => [
                 'kty' => 'RSA',
-                'n' => Base64::urlSafeEncode($details['rsa']['n']),
-                'e' => Base64::urlSafeEncode($details['rsa']['e']),
+                'n' => $this->base64Encoder->encode($details['rsa']['n']),
+                'e' => $this->base64Encoder->encode($details['rsa']['e']),
             ],
             'nonce' => $nonce,
             'url' => $url,
         ];
 
-        return self::sign($protected, $payload, $privateKey);
+        return $this->sign($protected, $payload, $privateKey);
     }
 
-    public static function kid(array $payload, string $kid, string $url, string $nonce, string $privateKeyPath): array
+    public function kid(array $payload, string $kid, string $url, string $nonce, string $privateKeyPath): array
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
         if ($privateKey === false) {
@@ -46,10 +66,10 @@ final class Signer
             'url' => $url,
         ];
 
-        return self::sign($protected, $payload, $privateKey);
+        return $this->sign($protected, $payload, $privateKey);
     }
 
-    public static function kty(string $privateKeyPath): string
+    public function kty(string $privateKeyPath): string
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
         if ($privateKey === false) {
@@ -62,23 +82,24 @@ final class Signer
 
         $header = [
             'kty' => 'RSA',
-            'n' => Base64::urlSafeEncode($details['rsa']['n']),
-            'e' => Base64::urlSafeEncode($details['rsa']['e']),
+            'n' => $this->base64Encoder->encode($details['rsa']['n']),
+            'e' => $this->base64Encoder->encode($details['rsa']['e']),
         ];
-        return Base64::hashEncode(json_encode($header));
+
+        return $this->base64Encoder->hashEncode(json_encode($header));
     }
 
-    private static function sign(array $protected, array $payload, $privateKey): array
+    private function sign(array $protected, array $payload, $privateKey): array
     {
-        $payloadEncoded = Base64::urlSafeEncode(str_replace('\\/', '/', json_encode($payload)));
-        $protectedEncoded = Base64::urlSafeEncode(json_encode($protected));
+        $payloadEncoded = $this->base64Encoder->encode(str_replace('\\/', '/', json_encode($payload)));
+        $protectedEncoded = $this->base64Encoder->encode(json_encode($protected));
 
         openssl_sign($protectedEncoded . '.' . $payloadEncoded, $signature, $privateKey, 'SHA256');
 
         return [
             'protected' => $protectedEncoded,
             'payload' => $payloadEncoded,
-            'signature' => Base64::urlSafeEncode($signature),
+            'signature' => $this->base64Encoder->encode($signature),
         ];
     }
 }

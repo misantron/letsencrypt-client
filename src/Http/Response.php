@@ -27,12 +27,12 @@ final class Response
         return $this->origin->getStatusCode() === self::HTTP_STATUS_OK;
     }
 
-    public function getPayload(): array
+    public function getDecodedContent(): array
     {
         return json_decode($this->origin->getBody()->getContents(), true);
     }
 
-    public function getRawBody(): string
+    public function getRawContent(): string
     {
         return $this->origin->getBody()->getContents();
     }

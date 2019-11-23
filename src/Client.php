@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt;
 
+use LetsEncrypt\Helper\KeyGenerator;
 use LetsEncrypt\Http\Connector;
 use LetsEncrypt\Logger\Logger;
 use LetsEncrypt\Service\AccountService;
@@ -38,19 +39,22 @@ class Client
         $authorizationService = new AuthorizationService();
         $authorizationService->setConnector($this->connector);
 
+        $keyGenerator = new KeyGenerator();
+
         $this->accountService = new AccountService($accountKeysPath);
+        $this->accountService->setKeyGenerator($keyGenerator);
+
         $this->orderService = new OrderService($authorizationService, $certificatesPath);
+        $this->orderService->setKeyGenerator($keyGenerator);
     }
 
     public function account(): AccountService
     {
-        return $this->accountService
-            ->setConnector($this->connector);
+        return $this->accountService->setConnector($this->connector);
     }
 
     public function order(): OrderService
     {
-        return $this->orderService
-            ->setConnector($this->connector);
+        return $this->orderService;
     }
 }

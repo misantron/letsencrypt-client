@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Service;
 
-use LetsEncrypt\Assert\Assert;
 use LetsEncrypt\Certificate\File;
 use LetsEncrypt\Entity\Account;
-use LetsEncrypt\Helper\Key;
+use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Http\ConnectorAwareTrait;
+use Webmozart\Assert\Assert;
 
 class AccountService
 {
     use ConnectorAwareTrait;
+    use KeyGeneratorAwareTrait;
 
     /**
      * @var string
@@ -21,7 +22,7 @@ class AccountService
 
     public function __construct(string $keysPath)
     {
-        Assert::directoryExists($keysPath);
+        Assert::directory($keysPath);
 
         $this->keysPath = $keysPath;
     }
@@ -38,7 +39,7 @@ class AccountService
 
     public function create(array $emails): Account
     {
-        Key::rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
+        $this->keyGenerator->rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
 
         $url = $this->createAccount($emails);
 
@@ -53,7 +54,7 @@ class AccountService
 
         $payload = ['contact' => $contact];
 
-        $response = $this->getConnector()->requestWithKIDSigned(
+        $response = $this->connector->signedKIDRequest(
             $account->getUrl(),
             $account->getUrl(),
             $payload,
@@ -63,7 +64,7 @@ class AccountService
         $state = clone $account;
 
         return new Account(
-            $response->getPayload(),
+            $response->getDecodedContent(),
             $state->getUrl(),
             $state->getPrivateKeyPath()
         );
@@ -73,7 +74,7 @@ class AccountService
     {
         $payload = ['status' => 'deactivated'];
 
-        $response = $this->getConnector()->requestWithKIDSigned(
+        $response = $this->connector->signedKIDRequest(
             $account->getUrl(),
             $account->getUrl(),
             $payload,
@@ -83,7 +84,7 @@ class AccountService
         $state = clone $account;
 
         return new Account(
-            $response->getPayload(),
+            $response->getDecodedContent(),
             $state->getUrl(),
             $state->getPrivateKeyPath()
         );
@@ -100,8 +101,8 @@ class AccountService
             'termsOfServiceAgreed' => true,
         ];
 
-        $response = $this->getConnector()->requestWithJWKSigned(
-            $this->getConnector()->getNewAccountEndpoint(),
+        $response = $this->connector->signedJWKRequest(
+            $this->connector->getNewAccountEndpoint(),
             $payload,
             $this->getPrivateKeyPath()
         );
@@ -115,8 +116,8 @@ class AccountService
             'onlyReturnExisting' => true,
         ];
 
-        $response = $this->getConnector()->requestWithJWKSigned(
-            $this->getConnector()->getNewAccountEndpoint(),
+        $response = $this->connector->signedJWKRequest(
+            $this->connector->getNewAccountEndpoint(),
             $payload,
             $this->getPrivateKeyPath()
         );
@@ -128,7 +129,7 @@ class AccountService
     {
         $payload = ['' => ''];
 
-        $response = $this->getConnector()->requestWithKIDSigned(
+        $response = $this->connector->signedKIDRequest(
             $url,
             $url,
             $payload,
@@ -136,7 +137,7 @@ class AccountService
         );
 
         return new Account(
-            $response->getPayload(),
+            $response->getDecodedContent(),
             $url,
             $this->getPrivateKeyPath()
         );

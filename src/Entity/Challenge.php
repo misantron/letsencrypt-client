@@ -11,8 +11,6 @@ final class Challenge extends Entity
     private const TYPE_HTTP = 'http-01';
     private const TYPE_DNS = 'dns-01';
 
-    public const DNS_VERIFY_URI = 'https://dns.google.com/resolve';
-
     /**
      * @var string
      */

@@ -17,9 +17,4 @@ trait ConnectorAwareTrait
 
         return $this;
     }
-
-    private function getConnector(): Connector
-    {
-        return $this->connector;
-    }
 }
