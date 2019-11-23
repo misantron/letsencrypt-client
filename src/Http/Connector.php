@@ -89,11 +89,6 @@ final class Connector
         return $this->endpoint->newOrder;
     }
 
-    public function getKeyChangeEndpoint(): string
-    {
-        return $this->endpoint->keyChange;
-    }
-
     /**
      * @param string $url
      * @param array $payload

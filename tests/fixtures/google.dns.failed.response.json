@@ -1,0 +1,23 @@
+{
+  "Status": 0,
+  "TC": false,
+  "RD": true,
+  "RA": true,
+  "AD": false,
+  "CD": false,
+  "Question": [
+    {
+      "name": "_acme-challenge.vk.com.",
+      "type": 16
+    }
+  ],
+  "Authority": [
+    {
+      "name": "vk.com.",
+      "type": 6,
+      "TTL": 899,
+      "data": "ns1.vkontakte.ru. ncc.vk.com. 2019112001 900 600 604800 900"
+    }
+  ],
+  "Comment": "Response from 87.240.136.136."
+}

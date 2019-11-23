@@ -10,7 +10,7 @@ namespace LetsEncrypt\Http;
  *
  * @see https://developers.google.com/speed/public-dns/docs/doh/json
  */
-class GooglePublicDNS
+final class GooglePublicDNS
 {
     use ConnectorAwareTrait;
 

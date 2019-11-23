@@ -8,7 +8,9 @@ use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use LetsEncrypt\Http\Connector;
 
 abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
 {
@@ -24,13 +26,25 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
      */
     private $httpMockClient;
 
+    /**
+     * @var array
+     */
+    private $history;
+
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->history = [];
+
         $this->mockHandler = new MockHandler();
+        $historyMiddleware = Middleware::history($this->history);
+
+        $handlerStack = HandlerStack::create($this->mockHandler);
+        $handlerStack->push($historyMiddleware);
+
         $this->httpMockClient = new Client([
-            'handler' => HandlerStack::create($this->mockHandler),
+            'handler' => $handlerStack,
         ]);
     }
 
@@ -40,11 +54,17 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
 
         $this->mockHandler = null;
         $this->httpMockClient = null;
+        $this->history = null;
     }
 
     protected function getHttpClientMock(): ClientInterface
     {
         return $this->httpMockClient;
+    }
+
+    protected function getRequestHistory(): array
+    {
+        return $this->history;
     }
 
     protected function appendResponseFixture(
@@ -56,5 +76,13 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
         $response = new Response($status, $headers, $content);
 
         $this->mockHandler->append($response);
+    }
+
+    protected function createConnector(): Connector
+    {
+        $this->appendResponseFixture('directory.response');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'oFvnlFP1wIhRlYS2jTaXbA']);
+
+        return new Connector(true, null, $this->getHttpClientMock());
     }
 }

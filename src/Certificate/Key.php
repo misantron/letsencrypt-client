@@ -52,12 +52,12 @@ final class Key
         return $this->type->isEqual('ec');
     }
 
-    public function getLength(): RSAKeyLength
+    public function getLength(): ?RSAKeyLength
     {
         return $this->length;
     }
 
-    public function getAlgorithm(): ECKeyAlgorithm
+    public function getAlgorithm(): ?ECKeyAlgorithm
     {
         return $this->algorithm;
     }

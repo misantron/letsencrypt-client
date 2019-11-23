@@ -149,7 +149,7 @@ class OrderService
         return $this->authorizationService->getPendingAuthorizations($digest, $authorizations, $type);
     }
 
-    public function verifyPendingAuthorization(string $identifier, string $type, Account $account, Order $order): bool
+    public function verifyPendingAuthorization(Account $account, Order $order, string $identifier, string $type): bool
     {
         $authorizations = $order->getAuthorizations();
 
@@ -276,12 +276,12 @@ class OrderService
         return $this->getCertificateBasePath($basename) . File::PUBLIC_KEY;
     }
 
-    public function getCertificatePath(string $basename): string
+    private function getCertificatePath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . File::CERTIFICATE;
     }
 
-    public function getFullChainCertificatePath(string $basename): string
+    private function getFullChainCertificatePath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . File::FULL_CHAIN_CERTIFICATE;
     }

@@ -1,0 +1,22 @@
+{
+  "Status": 0,
+  "TC": false,
+  "RD": true,
+  "RA": true,
+  "AD": false,
+  "CD": false,
+  "Question": [
+    {
+      "name": "_acme-challenge.test.com.",
+      "type": 16
+    }
+  ],
+  "Answer": [
+    {
+      "name": "_acme-challenge.test.com.",
+      "type": 16,
+      "TTL": 299,
+      "data": "\"Z0lrCsDEMPH9E1STFX99h_mTh3ae3jekB8etxVbFzjA\""
+    }
+  ]
+}

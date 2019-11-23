@@ -31,12 +31,12 @@ final class Certificate
         $this->key = $key;
     }
 
-    public function createWithRSAKey(string $notBefore, string $notAfter, RSAKeyLength $keyLength): self
+    public static function createWithRSAKey(string $notBefore, string $notAfter, RSAKeyLength $keyLength): self
     {
         return new static($notBefore, $notAfter, Key::rsa($keyLength));
     }
 
-    public function createWithECKey(string $notBefore, string $notAfter, ECKeyAlgorithm $algorithm): self
+    public static function createWithECKey(string $notBefore, string $notAfter, ECKeyAlgorithm $algorithm): self
     {
         return new static($notBefore, $notAfter, Key::ec($algorithm));
     }

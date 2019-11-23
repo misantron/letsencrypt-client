@@ -46,8 +46,10 @@ class AccountService
         return $this->getProfile($url);
     }
 
-    public function update(Account $account, array $emails): Account
+    public function update(array $emails): Account
     {
+        $accountUrl = $this->lookup();
+
         $contact = array_map(static function (string $email) {
             return strpos($email, 'mailto') === false ? 'mailto:' . $email : $email;
         }, $emails);
@@ -55,38 +57,36 @@ class AccountService
         $payload = ['contact' => $contact];
 
         $response = $this->connector->signedKIDRequest(
-            $account->getUrl(),
-            $account->getUrl(),
+            $accountUrl,
+            $accountUrl,
             $payload,
             $this->getPrivateKeyPath()
         );
 
-        $state = clone $account;
-
         return new Account(
             $response->getDecodedContent(),
-            $state->getUrl(),
-            $state->getPrivateKeyPath()
+            $accountUrl,
+            $this->getPrivateKeyPath()
         );
     }
 
-    public function deactivate(Account $account): Account
+    public function deactivate(): Account
     {
+        $accountUrl = $this->lookup();
+
         $payload = ['status' => 'deactivated'];
 
         $response = $this->connector->signedKIDRequest(
-            $account->getUrl(),
-            $account->getUrl(),
+            $accountUrl,
+            $accountUrl,
             $payload,
             $this->getPrivateKeyPath()
         );
 
-        $state = clone $account;
-
         return new Account(
             $response->getDecodedContent(),
-            $state->getUrl(),
-            $state->getPrivateKeyPath()
+            $accountUrl,
+            $this->getPrivateKeyPath()
         );
     }
 
