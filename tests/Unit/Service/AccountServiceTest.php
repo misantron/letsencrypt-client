@@ -13,7 +13,7 @@ class AccountServiceTest extends ApiClientTestCase
     public function testCreate(): void
     {
         if (!extension_loaded('openssl')) {
-            $this->markTestSkipped('OpenSSL extension required');
+            $this->markTestSkipped('OpenSSL PHP extension required');
         }
 
         $emails = [
