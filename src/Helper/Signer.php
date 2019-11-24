@@ -53,9 +53,7 @@ final class Signer implements SignerInterface
     public function kid(array $payload, string $kid, string $url, string $nonce, string $privateKeyPath): array
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
-        if ($privateKey === false) {
-
-        }
+        Assert::resource($privateKey);
 
         $protected = [
             'alg' => 'RS256',
@@ -70,13 +68,10 @@ final class Signer implements SignerInterface
     public function kty(string $privateKeyPath): string
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
-        if ($privateKey === false) {
+        Assert::resource($privateKey);
 
-        }
         $details = openssl_pkey_get_details($privateKey);
-        if ($details === false) {
-
-        }
+        Assert::isArray($details);
 
         $header = [
             'kty' => 'RSA',
