@@ -10,7 +10,7 @@ final class FileSystem
 {
     public static function readFileContent(string $path): string
     {
-        $file = new \SplFileObject($path);
+        $file = new \SplFileObject($path, 'r');
         $content = $file->fread($file->getSize());
 
         Assert::string($content);
@@ -20,7 +20,7 @@ final class FileSystem
 
     public static function writeFileContent(string $path, string $content): void
     {
-        $file = new \SplFileObject($path);
+        $file = new \SplFileObject($path, 'w');
         $file->rewind();
         $file->fwrite($content);
         $file->fflush();
