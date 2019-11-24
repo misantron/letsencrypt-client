@@ -39,7 +39,7 @@ class AccountService
 
     public function create(array $emails): Account
     {
-        $this->keyGenerator->rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
+//        $this->keyGenerator->rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
 
         $url = $this->createAccount($emails);
 
@@ -101,7 +101,7 @@ class AccountService
             'termsOfServiceAgreed' => true,
         ];
 
-        $response = $this->connector->signedJWKRequest(
+        $response = $this->connector->signedJWSRequest(
             $this->connector->getNewAccountEndpoint(),
             $payload,
             $this->getPrivateKeyPath()
@@ -116,7 +116,7 @@ class AccountService
             'onlyReturnExisting' => true,
         ];
 
-        $response = $this->connector->signedJWKRequest(
+        $response = $this->connector->signedJWSRequest(
             $this->connector->getNewAccountEndpoint(),
             $payload,
             $this->getPrivateKeyPath()

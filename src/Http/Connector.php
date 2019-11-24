@@ -95,9 +95,9 @@ final class Connector
      * @param string $privateKeyPath
      * @return Response
      */
-    public function signedJWKRequest(string $url, array $payload, string $privateKeyPath): Response
+    public function signedJWSRequest(string $url, array $payload, string $privateKeyPath): Response
     {
-        $sign = $this->signer->jwk($payload, $url, $this->nonce, $privateKeyPath);
+        $sign = $this->signer->jws($payload, $url, $this->nonce, $privateKeyPath);
 
         return $this->request('POST', $url, $sign);
     }

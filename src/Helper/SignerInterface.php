@@ -6,7 +6,7 @@ namespace LetsEncrypt\Helper;
 
 interface SignerInterface
 {
-    public function jwk(array $payload, string $url, string $nonce, string $privateKeyPath): array;
+    public function jws(array $payload, string $url, string $nonce, string $privateKeyPath): array;
 
     public function kid(array $payload, string $kid, string $url, string $nonce, string $privateKeyPath): array;
 

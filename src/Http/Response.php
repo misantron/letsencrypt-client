@@ -10,8 +10,6 @@ final class Response
 {
     private const HEADER_LOCATION = 'Location';
 
-    private const HTTP_STATUS_OK = 200;
-
     /**
      * @var ResponseInterface
      */
@@ -24,7 +22,7 @@ final class Response
 
     public function isStatusOk(): bool
     {
-        return $this->origin->getStatusCode() === self::HTTP_STATUS_OK;
+        return $this->origin->getStatusCode() === 200;
     }
 
     public function getDecodedContent(): array

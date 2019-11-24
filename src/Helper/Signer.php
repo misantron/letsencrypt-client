@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Helper;
 
+use Webmozart\Assert\Assert;
+
 final class Signer implements SignerInterface
 {
     /**
@@ -26,17 +28,13 @@ final class Signer implements SignerInterface
         return $this->base64Encoder;
     }
 
-    public function jwk(array $payload, string $url, string $nonce, string $privateKeyPath): array
+    public function jws(array $payload, string $url, string $nonce, string $privateKeyPath): array
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
-        if ($privateKey === false) {
-
-        }
+        Assert::resource($privateKey);
 
         $details = openssl_pkey_get_details($privateKey);
-        if ($details === false) {
-
-        }
+        Assert::isArray($details);
 
         $protected = [
             'alg' => 'RS256',

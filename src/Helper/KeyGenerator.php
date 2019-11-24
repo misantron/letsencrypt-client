@@ -45,7 +45,7 @@ final class KeyGenerator
     {
         $res = openssl_pkey_new($config);
         if ($res === false) {
-            $error = "Could not generate key pair! Check your OpenSSL configuration. OpenSSL Error: " . PHP_EOL;
+            $error = 'Unable to generate key pair:' . PHP_EOL;
             while ($message = openssl_error_string()) {
                 $error .= $message . PHP_EOL;
             }
