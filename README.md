@@ -1,5 +1,7 @@
 # LetsEncrypt ACME v2 client
 
+[![Build Status](https://img.shields.io/travis/com/misantron/letsencrypt-client.svg?style=flat-square&maxAge=2592000)](https://travis-ci.com/misantron/letsencrypt-client)
+
 [ACME v2 draft](https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md)
 
 ## Installation
