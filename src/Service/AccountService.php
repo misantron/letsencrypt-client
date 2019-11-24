@@ -39,7 +39,7 @@ class AccountService
 
     public function create(array $emails): Account
     {
-//        $this->keyGenerator->rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
+        $this->keyGenerator->rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
 
         $url = $this->createAccount($emails);
 

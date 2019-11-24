@@ -1,6 +1,8 @@
 language: php
 
-os: linux
+os:
+  - linux
+  - osx
 
 php:
   - '7.2'
@@ -9,15 +11,9 @@ php:
 
 cache:
   directories:
-    - vendor
     - $HOME/.composer/cache
 
-before_install: echo "extension = openssl.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-
-install:
-  - travis_retry composer self-update && composer --version
-  - export PATH="$HOME/.composer/vendor/bin:$PATH"
-  - travis_retry composer install --prefer-dist --no-interaction
+install: travis_retry composer install
 
 script:
   - vendor/bin/phpunit --testsuite unit --verbose
