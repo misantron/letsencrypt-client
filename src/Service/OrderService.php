@@ -6,7 +6,7 @@ namespace LetsEncrypt\Service;
 
 use GuzzleHttp\Exception\TransferException;
 use LetsEncrypt\Certificate\Certificate;
-use LetsEncrypt\Certificate\File;
+use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Order;
 use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
@@ -82,7 +82,7 @@ class OrderService
                 $orderUrl
             );
         } catch (\Throwable $e) {
-
+            throw new \RuntimeException('Unable to store order file');
         }
 
         if ($certificate->getKey()->isRSA()) {
@@ -181,16 +181,16 @@ class OrderService
 
         $certificates = $this->extractCertificates($response->getRawContent());
 
-        if (isset($certificates[File::CERTIFICATE])) {
+        if (isset($certificates[Bundle::CERTIFICATE])) {
             FileSystem::writeFileContent(
                 $this->getCertificatePath($basename),
-                $certificates[File::CERTIFICATE]
+                $certificates[Bundle::CERTIFICATE]
             );
         }
-        if (isset($certificates[File::FULL_CHAIN_CERTIFICATE])) {
+        if (isset($certificates[Bundle::FULL_CHAIN_CERTIFICATE])) {
             FileSystem::writeFileContent(
                 $this->getFullChainCertificatePath($basename),
-                $certificates[File::FULL_CHAIN_CERTIFICATE]
+                $certificates[Bundle::FULL_CHAIN_CERTIFICATE]
             );
         }
     }
@@ -202,17 +202,17 @@ class OrderService
         $files = [];
 
         if (preg_match_all($pattern, $content, $matches) !== false) {
-            $files[File::CERTIFICATE] = $matches[0][0];
+            $files[Bundle::CERTIFICATE] = $matches[0][0];
 
             $partsCount = count($matches[0]);
 
             if ($partsCount > 1) {
                 $fullChainContent = '';
-                for ($i = 1; $i < $partsCount; ++$i)  {
+                for ($i = 1; $i < $partsCount; ++$i) {
                     $fullChainContent .= PHP_EOL . $matches[0][$i];
                 }
 
-                $files[File::FULL_CHAIN_CERTIFICATE] = $fullChainContent;
+                $files[Bundle::FULL_CHAIN_CERTIFICATE] = $fullChainContent;
             }
         }
 
@@ -263,26 +263,26 @@ class OrderService
 
     private function getOrderFilePath(string $basename): string
     {
-        return $this->getCertificateBasePath($basename) . File::ORDER;
+        return $this->getCertificateBasePath($basename) . Bundle::ORDER;
     }
 
     private function getPrivateKeyPath(string $basename): string
     {
-        return $this->getCertificateBasePath($basename) . File::PRIVATE_KEY;
+        return $this->getCertificateBasePath($basename) . Bundle::PRIVATE_KEY;
     }
 
     private function getPublicKeyPath(string $basename): string
     {
-        return $this->getCertificateBasePath($basename) . File::PUBLIC_KEY;
+        return $this->getCertificateBasePath($basename) . Bundle::PUBLIC_KEY;
     }
 
     private function getCertificatePath(string $basename): string
     {
-        return $this->getCertificateBasePath($basename) . File::CERTIFICATE;
+        return $this->getCertificateBasePath($basename) . Bundle::CERTIFICATE;
     }
 
     private function getFullChainCertificatePath(string $basename): string
     {
-        return $this->getCertificateBasePath($basename) . File::FULL_CHAIN_CERTIFICATE;
+        return $this->getCertificateBasePath($basename) . Bundle::FULL_CHAIN_CERTIFICATE;
     }
 }

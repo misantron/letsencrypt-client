@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Certificate;
 
-final class File
+final class Bundle
 {
     public const PRIVATE_KEY = 'private.pem';
     public const PUBLIC_KEY = 'public.pem';

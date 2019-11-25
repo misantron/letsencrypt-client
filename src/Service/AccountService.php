@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Service;
 
-use LetsEncrypt\Certificate\File;
+use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Http\ConnectorAwareTrait;
@@ -145,11 +145,11 @@ class AccountService
 
     private function getPrivateKeyPath(): string
     {
-        return $this->keysPath . DIRECTORY_SEPARATOR . File::PRIVATE_KEY;
+        return $this->keysPath . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY;
     }
 
     private function getPublicKeyPath(): string
     {
-        return $this->keysPath . DIRECTORY_SEPARATOR . File::PUBLIC_KEY;
+        return $this->keysPath . DIRECTORY_SEPARATOR . Bundle::PUBLIC_KEY;
     }
 }

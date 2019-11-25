@@ -23,13 +23,15 @@ class AuthorizationService
         $this->googlePublicDNS = new GooglePublicDNS();
     }
 
+    /**
+     * @param array $urls
+     * @return Authorization[]
+     */
     public function getAuthorizations(array $urls): array
     {
-        $authorizations = [];
-        foreach ($urls as $url) {
-            $authorizations[] = $this->updateAuthorization($url);
-        }
-        return $authorizations;
+        return array_map(function (string $url) {
+            return $this->updateAuthorization($url);
+        }, $urls);
     }
 
     /**
@@ -60,7 +62,7 @@ class AuthorizationService
                         $pendingAuthorizations[] = [
                             'type' => $type,
                             'identifier' => $authorization->identifier['value'],
-                            'DNSDigest' => $dnsDigest,
+                            'dnsDigest' => $dnsDigest,
                         ];
                         break;
                 }
@@ -113,8 +115,7 @@ class AuthorizationService
                             }
                             break;
                         case $challenge->isDns():
-                            $dnsDigest = $this->connector->getSigner()->getBase64Encoder()->hashEncode($keyAuthorization);
-                            if ($this->verifyDnsChallenge($identifier, $dnsDigest)) {
+                            if ($this->verifyDnsChallenge($identifier, $keyAuthorization)) {
                                 $payload = [
                                     'keyAuthorization' => $keyAuthorization,
                                 ];
@@ -148,8 +149,10 @@ class AuthorizationService
         return $response->getRawContent() === $key;
     }
 
-    private function verifyDnsChallenge(string $domain, string $dnsDigest): bool
+    private function verifyDnsChallenge(string $domain, string $keyAuthorization): bool
     {
+        $dnsDigest = $this->connector->getSigner()->getBase64Encoder()->hashEncode($keyAuthorization);
+
         return $this->googlePublicDNS
             ->setConnector($this->connector)
             ->verify($domain, $dnsDigest);
