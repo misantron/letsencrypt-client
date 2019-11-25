@@ -23,13 +23,31 @@ class AccountServiceTest extends ApiClientTestCase
 
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('account.create.response', 201, [
-            'Content-Type' => 'application/json',
-            'Replay-Nonce' => 'D8s4D2mLs8Vn-goWuPQeKA',
-            'Link' => '<https://example.com/acme/directory>;rel="index"',
-            'Location' => 'https://example.com/acme/acct/evOfKhNU60wg',
-        ]);
-        $this->appendResponseFixture('account.profile.response', 200);
+        $this->appendResponseFixture(
+            'account.create.response',
+            201,
+            [
+                'Content-Type' => 'application/json',
+                'Replay-Nonce' => 'D8s4D2mLs8Vn-goWuPQeKA',
+                'Link' => '<https://example.com/acme/directory>;rel="index"',
+                'Location' => 'https://example.com/acme/acct/evOfKhNU60wg',
+            ],
+            [
+                'contact' => [
+                    'mailto:cert-admin@example.org',
+                    'mailto:admin@example.org'
+                ],
+                'termsOfServiceAgreed' => true,
+            ]
+        );
+        $this->appendResponseFixture(
+            'account.profile.response',
+            200,
+            [
+                'Content-Type' => 'application/json',
+            ],
+            ['' => '']
+        );
         $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'oFvnlFP1wIhRlYS2jTaXbA']);
 
         $service = new AccountService(KEYS_PATH);
@@ -44,5 +62,7 @@ class AccountServiceTest extends ApiClientTestCase
             'mailto:admin@example.org'
         ], $account->contact);
         $this->assertTrue($account->isValid());
+
+        $this->assertCount(5, $this->getRequestHistory());
     }
 }

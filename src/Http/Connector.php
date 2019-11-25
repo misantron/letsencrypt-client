@@ -139,13 +139,6 @@ final class Connector
             RequestOptions::HEADERS => [
                 'Content-Type' => $method === 'POST' ? 'application/jose+json' : 'application/json',
             ],
-            RequestOptions::ON_HEADERS => function (ResponseInterface $response) use ($method) {
-                if ($response->hasHeader(self::HEADER_NONCE)) {
-                    $this->nonce = $response->getHeaderLine(self::HEADER_NONCE);
-                } elseif ($method === 'POST') {
-                    $this->getNonce();
-                }
-            },
         ];
 
         if ($data !== null) {
@@ -154,10 +147,21 @@ final class Connector
 
         try {
             $response = $this->client->request($method, $uri, $options);
+
+            $this->updateNonce($method, $response);
         } catch (ClientException $e) {
             $response = $e->getResponse();
         }
 
         return new Response($response);
+    }
+
+    private function updateNonce(string $method, ResponseInterface $response): void
+    {
+        if ($response->hasHeader(self::HEADER_NONCE)) {
+            $this->nonce = $response->getHeaderLine(self::HEADER_NONCE);
+        } elseif ($method === 'POST') {
+            $this->getNonce();
+        }
     }
 }

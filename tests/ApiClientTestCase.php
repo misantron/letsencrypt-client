@@ -10,7 +10,9 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use LetsEncrypt\Helper\Base64SafeEncoder;
 use LetsEncrypt\Http\Connector;
+use Psr\Http\Message\RequestInterface;
 
 abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
 {
@@ -31,9 +33,16 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
      */
     private $history;
 
+    /**
+     * @var Base64SafeEncoder
+     */
+    private $base64Encoder;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->base64Encoder = new Base64SafeEncoder();
 
         $this->history = [];
 
@@ -51,6 +60,8 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
+        $this->assertSame(0, $this->mockHandler->count());
 
         $this->mockHandler = null;
         $this->httpMockClient = null;
@@ -70,12 +81,20 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
     protected function appendResponseFixture(
         string $name = null,
         int $status = 200,
-        array $headers = ['Content-Type' => 'application/json']
+        array $headers = ['Content-Type' => 'application/json'],
+        array $expectedPayload = null
     ): void {
         $content = $name === null ? '' : file_get_contents(__DIR__ . '/fixtures/' . $name . '.json');
         $response = new Response($status, $headers, $content);
 
-        $this->mockHandler->append($response);
+        $this->mockHandler->append(
+            function (RequestInterface $request) use ($response, $expectedPayload) {
+                if ($expectedPayload !== null) {
+                    $this->assertRequestPayload($request, $expectedPayload);
+                }
+                return $response;
+            }
+        );
     }
 
     protected function createConnector(): Connector
@@ -84,5 +103,14 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
         $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'oFvnlFP1wIhRlYS2jTaXbA']);
 
         return new Connector(true, null, $this->getHttpClientMock());
+    }
+
+    private function assertRequestPayload(RequestInterface $request, array $expected): void
+    {
+        $body = json_decode($request->getBody()->getContents(), true);
+        $payload = $this->base64Encoder->decode($body['payload']);
+
+        $this->assertIsString($payload);
+        $this->assertSame(json_encode($expected), $payload);
     }
 }
