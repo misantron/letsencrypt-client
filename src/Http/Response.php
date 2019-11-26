@@ -27,7 +27,11 @@ final class Response
 
     public function getDecodedContent(): array
     {
-        return json_decode($this->origin->getBody()->getContents(), true);
+        $body = $this->origin->getBody();
+        // rewind stream before read response content
+        $body->rewind();
+
+        return json_decode($body->getContents(), true);
     }
 
     public function getRawContent(): string

@@ -50,9 +50,4 @@ abstract class Entity
     {
         return $this->status === self::STATUS_PROCESSING;
     }
-
-    public function isFinalized(): bool
-    {
-        return $this->isValid() || $this->isProcessing();
-    }
 }

@@ -8,11 +8,30 @@ final class Account extends Entity
 {
     use UrlAwareTrait;
 
+    private const STATUS_DEACTIVATED = 'deactivated';
+
     public $id;
+
+    /**
+     * @var array
+     */
     public $key;
+
+    /**
+     * @var array
+     */
     public $contact;
+
     public $agreement;
+
+    /**
+     * @var string
+     */
     public $initialIp;
+
+    /**
+     * @var string
+     */
     public $createdAt;
 
     /**
@@ -31,5 +50,10 @@ final class Account extends Entity
     public function getPrivateKeyPath(): string
     {
         return $this->keyPath;
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->status === self::STATUS_DEACTIVATED;
     }
 }

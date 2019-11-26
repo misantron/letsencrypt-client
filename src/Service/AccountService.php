@@ -8,6 +8,7 @@ use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Http\ConnectorAwareTrait;
+use LetsEncrypt\Http\Response;
 use Webmozart\Assert\Assert;
 
 class AccountService
@@ -32,72 +33,56 @@ class AccountService
         Assert::fileExists($this->getPrivateKeyPath());
         Assert::fileExists($this->getPublicKeyPath());
 
-        $url = $this->lookup();
-
-        return $this->getProfile($url);
+        return $this->getAccount();
     }
 
     public function create(array $emails): Account
     {
         $this->keyGenerator->rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
 
-        $url = $this->createAccount($emails);
-
-        return $this->getProfile($url);
+        return $this->createAccount($emails);
     }
 
     public function update(array $emails): Account
     {
-        $accountUrl = $this->lookup();
+        $account = $this->getAccount();
 
-        $contact = array_map(static function (string $email) {
-            return strpos($email, 'mailto') === false ? 'mailto:' . $email : $email;
-        }, $emails);
-
-        $payload = ['contact' => $contact];
+        $payload = [
+            'contact' => $this->contactFromEmails($emails),
+        ];
 
         $response = $this->connector->signedKIDRequest(
-            $accountUrl,
-            $accountUrl,
+            $account->getUrl(),
+            $account->getUrl(),
             $payload,
             $this->getPrivateKeyPath()
         );
 
-        return new Account(
-            $response->getDecodedContent(),
-            $accountUrl,
-            $this->getPrivateKeyPath()
-        );
+        return $this->createAccountFromResponse($response);
     }
 
     public function deactivate(): Account
     {
-        $accountUrl = $this->lookup();
+        $account = $this->getAccount();
 
-        $payload = ['status' => 'deactivated'];
+        $payload = [
+            'status' => 'deactivated',
+        ];
 
         $response = $this->connector->signedKIDRequest(
-            $accountUrl,
-            $accountUrl,
+            $account->getUrl(),
+            $account->getUrl(),
             $payload,
             $this->getPrivateKeyPath()
         );
 
-        return new Account(
-            $response->getDecodedContent(),
-            $accountUrl,
-            $this->getPrivateKeyPath()
-        );
+        return $this->createAccountFromResponse($response);
     }
 
-    private function createAccount(array $emails): string
+    private function createAccount(array $emails): Account
     {
-        $contact = array_map(static function (string $email) {
-            return strpos($email, 'mailto') === false ? 'mailto:' . $email : $email;
-        }, $emails);
-
         $payload = [
-            'contact' => $contact,
+            'contact' => $this->contactFromEmails($emails),
             'termsOfServiceAgreed' => true,
         ];
 
@@ -107,10 +92,10 @@ class AccountService
             $this->getPrivateKeyPath()
         );
 
-        return $response->getLocation();
+        return $this->createAccountFromResponse($response);
     }
 
-    private function lookup(): string
+    private function getAccount(): Account
     {
         $payload = [
             'onlyReturnExisting' => true,
@@ -122,23 +107,21 @@ class AccountService
             $this->getPrivateKeyPath()
         );
 
-        return $response->getLocation();
+        return $this->createAccountFromResponse($response);
     }
 
-    private function getProfile(string $url): Account
+    private function contactFromEmails(array $emails): array
     {
-        $payload = ['' => ''];
+        return array_map(static function (string $email) {
+            return strpos($email, 'mailto') === false ? 'mailto:' . $email : $email;
+        }, $emails);
+    }
 
-        $response = $this->connector->signedKIDRequest(
-            $url,
-            $url,
-            $payload,
-            $this->getPrivateKeyPath()
-        );
-
+    private function createAccountFromResponse(Response $response): Account
+    {
         return new Account(
             $response->getDecodedContent(),
-            $url,
+            $response->getLocation(),
             $this->getPrivateKeyPath()
         );
     }

@@ -56,13 +56,7 @@ final class Logger
             return LogLevel::CRITICAL;
         }
         $statusCode = $response->getStatusCode();
-        switch (true) {
-            case $statusCode < 300:
-                return LogLevel::INFO;
-            case $statusCode < 400:
-                return LogLevel::WARNING;
-            default:
-                return LogLevel::ERROR;
-        }
+
+        return $statusCode < 400 ? LogLevel::INFO : LogLevel::ERROR;
     }
 }

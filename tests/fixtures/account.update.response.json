@@ -5,10 +5,9 @@
     "e": "AQAB"
   },
   "contact": [
-    "mailto:cert-admin@example.org",
     "mailto:admin@example.org"
   ],
   "initialIp": "46.231.212.68",
-  "createdAt": "2019-11-25T16:29:37.16977542Z",
+  "createdAt": "2019-11-25T16:29:37Z",
   "status": "valid"
 }

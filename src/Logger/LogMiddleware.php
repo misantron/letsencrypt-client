@@ -43,8 +43,9 @@ final class LogMiddleware
                 $level = $this->logger->getLogLevel($response);
                 $context = [
                     'method' => $request->getMethod(),
-                    'url' => $request->getUri(),
-                    'headers' => $response->getHeaders(),
+                    'url' => (string) $request->getUri(),
+                    'status' => $response->getStatusCode(),
+                    'headers' => json_encode($response->getHeaders(), JSON_PRETTY_PRINT),
                     'body' => $response->getBody()->getContents(),
                 ];
                 $this->logger->log($level, 'succeed request', $context);
@@ -60,12 +61,13 @@ final class LogMiddleware
                 $level = $this->logger->getLogLevel($reason->getResponse());
                 $context = [
                     'method' => $request->getMethod(),
-                    'url' => $request->getUri(),
+                    'url' => (string) $request->getUri(),
                 ];
                 if ($reason->hasResponse()) {
                     /** @var ResponseInterface $response */
                     $response = $reason->getResponse();
-                    $context['headers'] = $response->getHeaders();
+                    $context['status'] = $response->getStatusCode();
+                    $context['headers'] = json_encode($response->getHeaders(), JSON_PRETTY_PRINT);
                     $context['body'] = $response->getBody()->getContents();
                 }
                 $this->logger->log($level, 'failed request', $context);
@@ -78,7 +80,7 @@ final class LogMiddleware
     {
         $this->logger->log(LogLevel::INFO, 'request', [
             'method' => $request->getMethod(),
-            'url' => $request->getUri(),
+            'url' => (string) $request->getUri(),
             'headers' => $request->getHeaders(),
         ]);
     }
