@@ -11,7 +11,7 @@ final class Authorization extends Entity
     /**
      * @var array
      */
-    public $identifier;
+    private $identifier;
 
     /**
      * @var string
@@ -48,5 +48,13 @@ final class Authorization extends Entity
             }
         }
         throw new \InvalidArgumentException('Unknown challenge type provided');
+    }
+
+    /**
+     * @return Identifier
+     */
+    public function getIdentifier(): Identifier
+    {
+        return new Identifier($this->identifier);
     }
 }

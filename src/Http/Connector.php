@@ -89,6 +89,11 @@ final class Connector
         return $this->endpoint->newOrder;
     }
 
+    public function getRevokeCertificateEndpoint(): string
+    {
+        return $this->endpoint->revokeCert;
+    }
+
     /**
      * @param string $url
      * @param array $payload
@@ -152,6 +157,14 @@ final class Connector
         } catch (ClientException $e) {
             $response = $e->getResponse();
         }
+
+//        var_dump([
+//            'method' => $method,
+//            'uri' => $uri,
+//            'status' => $response->getStatusCode(),
+//            'headers' => json_encode($response->getHeaders(), JSON_PRETTY_PRINT),
+//            'content' => $response->getBody()->getContents(),
+//        ]);
 
         return new Response($response);
     }

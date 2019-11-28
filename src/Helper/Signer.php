@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Helper;
 
-use Webmozart\Assert\Assert;
+use LetsEncrypt\Exception\KeyPairException;
 
 final class Signer implements SignerInterface
 {
@@ -28,13 +28,26 @@ final class Signer implements SignerInterface
         return $this->base64Encoder;
     }
 
+    /**
+     * @param array $payload
+     * @param string $url
+     * @param string $nonce
+     * @param string $privateKeyPath
+     * @return array
+     *
+     * @throws KeyPairException
+     */
     public function jws(array $payload, string $url, string $nonce, string $privateKeyPath): array
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
-        Assert::resource($privateKey);
+        if ($privateKey === false) {
+            throw KeyPairException::privateKeyInvalid();
+        }
 
         $details = openssl_pkey_get_details($privateKey);
-        Assert::isArray($details);
+        if ($details === false) {
+            throw KeyPairException::privateKeyDetailsError();
+        }
 
         $protected = [
             'alg' => 'RS256',
@@ -50,10 +63,22 @@ final class Signer implements SignerInterface
         return $this->sign($protected, $payload, $privateKey);
     }
 
+    /**
+     * @param array $payload
+     * @param string $kid
+     * @param string $url
+     * @param string $nonce
+     * @param string $privateKeyPath
+     * @return array
+     *
+     * @throws KeyPairException
+     */
     public function kid(array $payload, string $kid, string $url, string $nonce, string $privateKeyPath): array
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
-        Assert::resource($privateKey);
+        if ($privateKey === false) {
+            throw KeyPairException::privateKeyInvalid();
+        }
 
         $protected = [
             'alg' => 'RS256',
@@ -65,13 +90,23 @@ final class Signer implements SignerInterface
         return $this->sign($protected, $payload, $privateKey);
     }
 
+    /**
+     * @param string $privateKeyPath
+     * @return string
+     *
+     * @throws KeyPairException
+     */
     public function kty(string $privateKeyPath): string
     {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
-        Assert::resource($privateKey);
+        if ($privateKey === false) {
+            throw KeyPairException::privateKeyInvalid();
+        }
 
         $details = openssl_pkey_get_details($privateKey);
-        Assert::isArray($details);
+        if ($details === false) {
+            throw KeyPairException::privateKeyDetailsError();
+        }
 
         $header = [
             'kty' => 'RSA',

@@ -47,13 +47,13 @@ class AuthorizationService
         foreach ($authorizations as $authorization) {
             $challenge = $authorization->getChallenge($type);
             if ($challenge->isPending()) {
-                $keyAuthorization = $challenge->token . '.' . $digest;
+                $keyAuthorization = $challenge->getToken() . '.' . $digest;
                 switch (true) {
                     case $challenge->isHttp():
                         $pendingAuthorizations[] = [
                             'type' => $type,
-                            'identifier' => $authorization->identifier['value'],
-                            'filename' => $challenge->token,
+                            'identifier' => $authorization->getIdentifier()->getValue(),
+                            'filename' => $challenge->getToken(),
                             'content' => $keyAuthorization,
                         ];
                         break;
@@ -61,7 +61,7 @@ class AuthorizationService
                         $dnsDigest = $this->connector->getSigner()->getBase64Encoder()->hashEncode($keyAuthorization);
                         $pendingAuthorizations[] = [
                             'type' => $type,
-                            'identifier' => $authorization->identifier['value'],
+                            'identifier' => $authorization->getIdentifier()->getValue(),
                             'dnsDigest' => $dnsDigest,
                         ];
                         break;
@@ -88,14 +88,14 @@ class AuthorizationService
         $digest = $this->connector->getSigner()->kty($account->getPrivateKeyPath());
 
         foreach ($authorizations as $authorization) {
-            if ($authorization->identifier['value'] === $identifier && $authorization->isPending()) {
+            if ($authorization->isPending() && $authorization->getIdentifier()->getValue() === $identifier) {
                 $challenge = $authorization->getChallenge($type);
                 if ($challenge->isPending()) {
-                    $keyAuthorization = $challenge->token . '.' . $digest;
+                    $keyAuthorization = $challenge->getToken() . '.' . $digest;
 
                     switch (true) {
                         case $challenge->isHttp():
-                            if ($this->verifyHttpChallenge($identifier, $challenge->token, $keyAuthorization)) {
+                            if ($this->verifyHttpChallenge($identifier, $challenge->getToken(), $keyAuthorization)) {
                                 $payload = [
                                     'keyAuthorization' => $keyAuthorization,
                                 ];
@@ -151,7 +151,10 @@ class AuthorizationService
 
     private function verifyDnsChallenge(string $domain, string $keyAuthorization): bool
     {
-        $dnsDigest = $this->connector->getSigner()->getBase64Encoder()->hashEncode($keyAuthorization);
+        $dnsDigest = $this->connector
+            ->getSigner()
+            ->getBase64Encoder()
+            ->hashEncode($keyAuthorization);
 
         return $this->googlePublicDNS
             ->setConnector($this->connector)

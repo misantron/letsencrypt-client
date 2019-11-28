@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Service;
 
+use LetsEncrypt\Assertion\Assert;
 use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Http\ConnectorAwareTrait;
 use LetsEncrypt\Http\Response;
-use Webmozart\Assert\Assert;
 
 class AccountService
 {

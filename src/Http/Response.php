@@ -20,6 +20,11 @@ final class Response
         $this->origin = $origin;
     }
 
+    /**
+     * Check if response return 200 status code
+     *
+     * @return bool
+     */
     public function isStatusOk(): bool
     {
         return $this->origin->getStatusCode() === 200;

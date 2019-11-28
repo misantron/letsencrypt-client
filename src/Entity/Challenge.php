@@ -14,7 +14,7 @@ final class Challenge extends Entity
     /**
      * @var string
      */
-    public $type;
+    private $type;
 
     /**
      * @var string
@@ -24,7 +24,7 @@ final class Challenge extends Entity
     /**
      * @var string
      */
-    public $token;
+    private $token;
 
     public function isDns(): bool
     {
@@ -34,5 +34,10 @@ final class Challenge extends Entity
     public function isHttp(): bool
     {
         return $this->type === self::TYPE_HTTP;
+    }
+
+    public function getToken(): string
+    {
+        return $this->token;
     }
 }

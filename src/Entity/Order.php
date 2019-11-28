@@ -14,43 +14,44 @@ final class Order extends Entity
     public $expires;
 
     /**
-     * @var array
+     * Order identifiers
+     * @example {'type':'dns', 'value':'*.example.com'}
+     * @var Identifier[]
      */
-    public $identifiers;
-
-    /**
-     * @var array
-     */
-    public $authorizations;
-
-    /**
-     * @var string
-     */
-    public $finalize;
-
-    /**
-     * @var string
-     */
-    public $certificate;
+    private $identifiers;
 
     /**
      * @var Authorization[]
      */
-    private $authorizationsData;
+    private $authorizations;
 
-    public function __construct(array $data, array $authorizationsData, string $url)
+    /**
+     * Order finalize URL
+     * @var string
+     */
+    private $finalize;
+
+    /**
+     * Certificate request URL
+     * @var string
+     */
+    private $certificate;
+
+    public function __construct(array $data, string $url)
     {
+        // extract only value from identifiers data
+        $data['identifiers'] = array_map(static function (array $entry) {
+            return $entry['value'];
+        }, $data['identifiers']);
+
         parent::__construct($data);
 
-        $this->authorizationsData = $authorizationsData;
         $this->url = $url;
     }
 
     public function isIdentifiersEqual(array $subjects): bool
     {
-        $identifiers = array_map(static function (array $entry) {
-            return $entry['value'];
-        }, $this->identifiers);
+        $identifiers = $this->identifiers;
 
         sort($identifiers, SORT_STRING);
         sort($subjects, SORT_STRING);
@@ -64,7 +65,7 @@ final class Order extends Entity
     public function getPendingAuthorizations(): array
     {
         $authorizations = [];
-        foreach ($this->authorizationsData as $authorization) {
+        foreach ($this->authorizations as $authorization) {
             if ($authorization->isPending()) {
                 $authorizations[] = $authorization;
             }
@@ -77,16 +78,31 @@ final class Order extends Entity
      */
     public function getAuthorizations(): array
     {
-        return $this->authorizationsData;
+        return $this->authorizations;
     }
 
     public function allAuthorizationsValid(): bool
     {
-        foreach ($this->authorizationsData as $authorization) {
+        foreach ($this->authorizations as $authorization) {
             if (!$authorization->isValid()) {
                 return false;
             }
         }
         return true;
+    }
+
+    public function getIdentifiers(): array
+    {
+        return $this->identifiers;
+    }
+
+    public function getFinalizeUrl(): string
+    {
+        return $this->finalize;
+    }
+
+    public function getCertificateRequestUrl(): string
+    {
+        return $this->certificate;
     }
 }
