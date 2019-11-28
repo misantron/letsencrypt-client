@@ -1,6 +1,7 @@
 # LetsEncrypt ACME v2 client
 
 [![Build Status](https://img.shields.io/travis/com/misantron/letsencrypt-client.svg?style=flat-square&maxAge=2592000)](https://travis-ci.com/misantron/letsencrypt-client)
+[![Code Coverage](https://img.shields.io/coveralls/github/misantron/letsencrypt-client.svg?style=flat-square)](https://coveralls.io/github/misantron/letsencrypt-client)
 
 [ACME v2 draft](https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md)
 
