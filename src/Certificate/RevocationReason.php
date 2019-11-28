@@ -13,7 +13,7 @@ use Spatie\Enum\Enum;
  * @method static self unspecified()
  * @method static self keyCompromise()
  * @method static self affiliationChanged()
- * @method static self superceded()
+ * @method static self superseded()
  * @method static self cessationOfOperation()
  */
 final class RevocationReason extends Enum
