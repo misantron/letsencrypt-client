@@ -18,24 +18,24 @@ final class Order extends Entity
      * @example {'type':'dns', 'value':'*.example.com'}
      * @var Identifier[]
      */
-    private $identifiers;
+    protected $identifiers;
 
     /**
      * @var Authorization[]
      */
-    private $authorizations;
+    protected $authorizations;
 
     /**
      * Order finalize URL
      * @var string
      */
-    private $finalize;
+    protected $finalize;
 
     /**
      * Certificate request URL
      * @var string
      */
-    private $certificate;
+    protected $certificate;
 
     public function __construct(array $data, string $url)
     {

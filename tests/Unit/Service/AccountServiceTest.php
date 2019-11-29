@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Tests\Unit\Service;
 
+use LetsEncrypt\Exception\EnvironmentException;
 use LetsEncrypt\Helper\KeyGenerator;
 use LetsEncrypt\Http\Connector;
 use LetsEncrypt\Service\AccountService;
@@ -11,6 +12,21 @@ use LetsEncrypt\Tests\ApiClientTestCase;
 
 class AccountServiceTest extends ApiClientTestCase
 {
+    public function testConstructor(): void
+    {
+        $service = new AccountService(KEYS_PATH);
+
+        $this->assertPropertySame(KEYS_PATH, 'keysPath', $service);
+    }
+
+    public function testConstructorWithInvalidKeysPath(): void
+    {
+        $this->expectException(EnvironmentException::class);
+        $this->expectExceptionMessage('Account keys directory path "notExistDirectory" is not valid');
+
+        new AccountService('notExistDirectory');
+    }
+
     public function testCreate(): void
     {
         $emails = [

@@ -36,7 +36,7 @@ class OrderService
 
     public function __construct(AuthorizationService $authorizationService, string $filesPath)
     {
-        Assert::directory($filesPath);
+        Assert::directory($filesPath, 'Certificates directory path %s is not valid');
 
         $this->authorizationService = $authorizationService;
         $this->filesPath = $filesPath;

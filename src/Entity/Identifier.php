@@ -9,12 +9,12 @@ final class Identifier extends Entity
     /**
      * @var string
      */
-    private $type;
+    protected $type;
 
     /**
      * @var string
      */
-    private $value;
+    protected $value;
 
     public function getValue(): string
     {

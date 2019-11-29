@@ -14,7 +14,7 @@ final class Challenge extends Entity
     /**
      * @var string
      */
-    private $type;
+    protected $type;
 
     /**
      * @var string
@@ -24,7 +24,7 @@ final class Challenge extends Entity
     /**
      * @var string
      */
-    private $token;
+    protected $token;
 
     public function isDns(): bool
     {

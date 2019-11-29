@@ -11,7 +11,7 @@ final class Authorization extends Entity
     /**
      * @var array
      */
-    private $identifier;
+    protected $identifier;
 
     /**
      * @var string
@@ -21,7 +21,7 @@ final class Authorization extends Entity
     /**
      * @var array
      */
-    private $challenges;
+    protected $challenges;
 
     /**
      * @var bool

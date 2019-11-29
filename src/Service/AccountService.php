@@ -23,7 +23,7 @@ class AccountService
 
     public function __construct(string $keysPath)
     {
-        Assert::directory($keysPath);
+        Assert::directory($keysPath, 'Account keys directory path %s is not valid');
 
         $this->keysPath = $keysPath;
     }
