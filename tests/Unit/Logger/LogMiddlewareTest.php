@@ -65,15 +65,9 @@ class LogMiddlewareTest extends TestCase
         );
     }
 
-    private function appendResponse(
-        int $code = 200,
-        array $headers = [],
-        string $body = '',
-        string $version = '1.1',
-        string $reason = null
-    ): void
+    private function appendResponse(int $code = 200, array $headers = [], string $body = ''): void
     {
-        $this->mockHandler->append(new Response($code, $headers, $body, $version, $reason));
+        $this->mockHandler->append(new Response($code, $headers, $body));
     }
 
     private function appendException(TransferException $exception): void
@@ -123,12 +117,12 @@ class LogMiddlewareTest extends TestCase
         try {
             $client->get('/foo');
         } catch (TransferException $e) {
-
+            // ignore exception
         }
         try {
             $client->get('/bar');
         } catch (TransferException $e) {
-
+            // ignore exception
         }
 
         $this->assertCount(2, $this->logger->records);
@@ -161,12 +155,12 @@ class LogMiddlewareTest extends TestCase
         try {
             $client->get('/foo');
         } catch (TransferException $e) {
-
+            // ignore exception
         }
         try {
             $client->get('/bar');
         } catch (TransferException $e) {
-
+            // ignore exception
         }
 
         $this->assertCount(4, $this->logger->records);

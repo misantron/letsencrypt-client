@@ -58,11 +58,13 @@ class AuthorizationService
                         ];
                         break;
                     case $challenge->isDns():
-                        $dnsDigest = $this->connector->getSigner()->getBase64Encoder()->hashEncode($keyAuthorization);
                         $pendingAuthorizations[] = [
                             'type' => $type,
                             'identifier' => $authorization->getIdentifier()->getValue(),
-                            'dnsDigest' => $dnsDigest,
+                            'dnsDigest' => $this->connector
+                                ->getSigner()
+                                ->getBase64Encoder()
+                                ->hashEncode($keyAuthorization),
                         ];
                         break;
                 }
