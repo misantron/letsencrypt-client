@@ -22,7 +22,7 @@ class AccountServiceTest extends ApiClientTestCase
     public function testConstructorWithInvalidKeysPath(): void
     {
         $this->expectException(EnvironmentException::class);
-        $this->expectExceptionMessage('Account keys directory path "notExistDirectory" is not valid');
+        $this->expectExceptionMessage('Account keys directory path "notExistDirectory" is not a directory');
 
         new AccountService('notExistDirectory');
     }
@@ -37,7 +37,7 @@ class AccountServiceTest extends ApiClientTestCase
         $connector = $this->createConnector();
 
         $this->appendResponseFixture(
-            'account.create.response',
+            'account.create.response.json',
             201,
             [
                 'Content-Type' => 'application/json',
@@ -75,7 +75,7 @@ class AccountServiceTest extends ApiClientTestCase
         $connector = $this->createConnector();
 
         $this->appendResponseFixture(
-            'account.get.response',
+            'account.get.response.json',
             200,
             [
                 'Content-Type' => 'application/json',
@@ -113,7 +113,7 @@ class AccountServiceTest extends ApiClientTestCase
         $connector = $this->createConnector();
 
         $this->appendResponseFixture(
-            'account.get.response',
+            'account.get.response.json',
             200,
             [
                 'Content-Type' => 'application/json',
@@ -127,7 +127,7 @@ class AccountServiceTest extends ApiClientTestCase
         );
 
         $this->appendResponseFixture(
-            'account.update.response',
+            'account.update.response.json',
             200,
             [
                 'Content-Type' => 'application/json',
@@ -162,7 +162,7 @@ class AccountServiceTest extends ApiClientTestCase
         $connector = $this->createConnector();
 
         $this->appendResponseFixture(
-            'account.get.response',
+            'account.get.response.json',
             200,
             [
                 'Content-Type' => 'application/json',
@@ -176,7 +176,7 @@ class AccountServiceTest extends ApiClientTestCase
         );
 
         $this->appendResponseFixture(
-            'account.deactivate.response',
+            'account.deactivate.response.json',
             200,
             [
                 'Content-Type' => 'application/json',

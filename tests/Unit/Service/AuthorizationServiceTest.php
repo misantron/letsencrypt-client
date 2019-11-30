@@ -26,8 +26,8 @@ class AuthorizationServiceTest extends ApiClientTestCase
         ];
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('authorization1.response');
-        $this->appendResponseFixture('authorization2.response');
+        $this->appendResponseFixture('authorization1.response.json');
+        $this->appendResponseFixture('authorization2.response.json');
 
         $service = new AuthorizationService();
         $service->setConnector($connector);

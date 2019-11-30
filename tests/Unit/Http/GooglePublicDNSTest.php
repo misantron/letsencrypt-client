@@ -13,7 +13,7 @@ class GooglePublicDNSTest extends ApiClientTestCase
     {
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('google.dns.success.response');
+        $this->appendResponseFixture('google.dns.success.json');
 
         $service = new GooglePublicDNS();
         $service->setConnector($connector);
@@ -25,7 +25,7 @@ class GooglePublicDNSTest extends ApiClientTestCase
     {
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('google.dns.failed.response');
+        $this->appendResponseFixture('google.dns.failed.response.json');
 
         $service = new GooglePublicDNS();
         $service->setConnector($connector);

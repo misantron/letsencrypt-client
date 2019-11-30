@@ -79,12 +79,12 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
     }
 
     protected function appendResponseFixture(
-        string $name = null,
+        string $fileName = null,
         int $status = 200,
         array $headers = ['Content-Type' => 'application/json'],
         array $expectedPayload = null
     ): void {
-        $content = $name === null ? '' : file_get_contents(__DIR__ . '/fixtures/' . $name . '.json');
+        $content = $fileName === null ? '' : file_get_contents(__DIR__ . '/fixtures/' . $fileName);
         $response = new Response($status, $headers, $content);
 
         $this->mockHandler->append(
@@ -99,7 +99,7 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
 
     protected function createConnector(): Connector
     {
-        $this->appendResponseFixture('directory.response');
+        $this->appendResponseFixture('directory.response.json');
         $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'oFvnlFP1wIhRlYS2jTaXbA']);
 
         return new Connector(true, null, $this->getHttpClientMock());

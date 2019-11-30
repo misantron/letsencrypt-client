@@ -36,7 +36,7 @@ class OrderService
 
     public function __construct(AuthorizationService $authorizationService, string $filesPath)
     {
-        Assert::directory($filesPath, 'Certificates directory path %s is not valid');
+        Assert::directory($filesPath, 'Certificates directory path %s is not a directory');
 
         $this->authorizationService = $authorizationService;
         $this->filesPath = $filesPath;
@@ -57,11 +57,11 @@ class OrderService
         $certificateBasePath = $this->getCertificateBasePath($basename);
 
         if (!mkdir($certificateBasePath, 0755)) {
-            throw new EnvironmentException('Unable to create certificate directory: ' . $certificateBasePath);
+            throw new EnvironmentException('Unable to create certificate directory "' . $certificateBasePath . '"');
         }
 
-        Assert::directory($certificateBasePath);
-        Assert::writable($certificateBasePath);
+        Assert::directory($certificateBasePath, 'Certificate directory path %s is not a directory');
+        Assert::writable($certificateBasePath, 'Certificates directory path %s is not writable');
 
         $identifiers = array_map(static function (string $subject) {
             return [
@@ -358,27 +358,27 @@ class OrderService
         return $this->filesPath . DIRECTORY_SEPARATOR . $basename . DIRECTORY_SEPARATOR;
     }
 
-    private function getOrderFilePath(string $basename): string
+    public function getOrderFilePath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . Bundle::ORDER;
     }
 
-    private function getPrivateKeyPath(string $basename): string
+    public function getPrivateKeyPath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . Bundle::PRIVATE_KEY;
     }
 
-    private function getPublicKeyPath(string $basename): string
+    public function getPublicKeyPath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . Bundle::PUBLIC_KEY;
     }
 
-    private function getCertificatePath(string $basename): string
+    public function getCertificatePath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . Bundle::CERTIFICATE;
     }
 
-    private function getFullChainCertificatePath(string $basename): string
+    public function getFullChainCertificatePath(string $basename): string
     {
         return $this->getCertificateBasePath($basename) . Bundle::FULL_CHAIN_CERTIFICATE;
     }
