@@ -36,7 +36,7 @@ class OrderServiceTest extends ApiClientTestCase
 
         // cleanup certificate directory
         if (is_dir(KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org')) {
-            unlink(KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org');
+            rmdir(KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org');
         }
         // remove account key pair
         if (file_exists(KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY)) {
@@ -98,6 +98,8 @@ class OrderServiceTest extends ApiClientTestCase
                         'value' => 'example.org',
                     ],
                 ],
+                'notBefore' => '',
+                'notAfter' => '',
             ]
         );
 
