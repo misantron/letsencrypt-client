@@ -35,8 +35,17 @@ class OrderServiceTest extends ApiClientTestCase
         parent::tearDownAfterClass();
 
         // cleanup certificate directory
-        if (is_dir(KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org')) {
-            rmdir(KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org');
+        $certificateDirectoryPath = KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org';
+        $filesList = scandir($certificateDirectoryPath);
+        if ($filesList !== false) {
+            // remove all files from directory
+            array_walk($filesList, static function (string $file) use ($certificateDirectoryPath) {
+                if (is_file($certificateDirectoryPath . $file)) {
+                    unlink($certificateDirectoryPath . $file);
+                }
+            });
+            // finally remove empty directory
+            rmdir($certificateDirectoryPath);
         }
         // remove account key pair
         if (file_exists(KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY)) {
@@ -103,6 +112,9 @@ class OrderServiceTest extends ApiClientTestCase
             ]
         );
 
+        $this->appendResponseFixture('authorization1.response.json');
+        $this->appendResponseFixture('authorization2.response.json');
+
         $service = $this->createService($connector);
         $order = $service->create($account, $domain, $subjects, $certificate);
 
@@ -116,6 +128,7 @@ class OrderServiceTest extends ApiClientTestCase
         $this->assertSame($order->getUrl(), file_get_contents($service->getOrderFilePath($domain)));
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo/finalize', $order->getFinalizeUrl());
         $this->assertSame(['www.example.org', 'example.org'], $order->getIdentifiers());
+        $this->assertCount(2, $order->getAuthorizations());
     }
 
     /**
@@ -170,7 +183,10 @@ class OrderServiceTest extends ApiClientTestCase
 
     private function createService(Connector $connector): OrderService
     {
-        $service = new OrderService(new AuthorizationService(), KEYS_PATH);
+        $authorizationService = new AuthorizationService();
+        $authorizationService->setConnector($connector);
+
+        $service = new OrderService($authorizationService, KEYS_PATH);
         $service->setConnector($connector);
         $service->setKeyGenerator(new KeyGenerator());
 
