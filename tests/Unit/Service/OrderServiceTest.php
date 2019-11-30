@@ -35,7 +35,7 @@ class OrderServiceTest extends ApiClientTestCase
         parent::tearDownAfterClass();
 
         // cleanup certificate directory
-        $certificateDirectoryPath = KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org';
+        $certificateDirectoryPath = KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org' . DIRECTORY_SEPARATOR;
         $filesList = scandir($certificateDirectoryPath);
         if ($filesList !== false) {
             // remove all files from directory
@@ -164,14 +164,31 @@ class OrderServiceTest extends ApiClientTestCase
 
         $connector = $this->createConnector();
 
+        // finalize order
         $this->appendResponseFixture('order.finalize.response.json', 200, [
             'Replay-Nonce' => 'CGf81JWBsq8QyIgPCi9Q9X',
             'Link' => '<https://example.com/acme/directory>;rel="index"',
             'Location' => 'https://example.com/acme/order/4E16bbL5iSw',
         ]);
+        $this->appendResponseFixture('authorization1.response.json');
+        $this->appendResponseFixture('authorization2.response.json');
+
+        // 1st try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
+        $this->appendResponseFixture('authorization1.response.json');
+        $this->appendResponseFixture('authorization2.response.json');
+
+        // 2nd try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
+        $this->appendResponseFixture('authorization1.response.json');
+        $this->appendResponseFixture('authorization2.response.json');
+
+        // 3rd try: order is valid
         $this->appendResponseFixture('order.valid.response.json');
+        $this->appendResponseFixture('authorization1.response.json');
+        $this->appendResponseFixture('authorization2.response.json');
+
+        // get certificate
         $this->appendResponseFixture('certificate.response');
 
         $service = $this->createService($connector);
