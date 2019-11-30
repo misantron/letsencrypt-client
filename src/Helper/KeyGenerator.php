@@ -54,7 +54,7 @@ final class KeyGenerator
     }
 
     /**
-     * @param string $basename
+     * @param string $commonName
      * @param array $subjects
      * @param string $privateKeyPath
      * @return string
@@ -62,7 +62,7 @@ final class KeyGenerator
      * @throws KeyGeneratorException
      * @throws KeyPairException
      */
-    public function csr(string $basename, array $subjects, string $privateKeyPath): string
+    public function csr(string $commonName, array $subjects, string $privateKeyPath): string
     {
         $domains = [];
         foreach (array_values($subjects) as $index => $subject) {
@@ -83,7 +83,7 @@ final class KeyGenerator
 
             $resource = openssl_csr_new(
                 [
-                    'commonName' => $basename,
+                    'commonName' => $commonName,
                 ],
                 $privateKey,
                 [
@@ -103,6 +103,7 @@ final class KeyGenerator
 
             return $csr;
         } finally {
+            // delete temporary file anyway
             unlink($csrConfigFilePath);
         }
     }

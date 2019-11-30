@@ -15,40 +15,40 @@ final class Certificate
     private $key;
 
     /**
-     * @var \DateTimeImmutable
+     * @var \DateTimeImmutable|null
      */
     private $notBefore;
 
     /**
-     * @var \DateTimeImmutable
+     * @var \DateTimeImmutable|null
      */
     private $notAfter;
 
-    private function __construct(string $notBefore, string $notAfter, Key $key)
+    private function __construct(Key $key, ?string $notBefore, ?string $notAfter)
     {
-        $this->notBefore = new \DateTimeImmutable($notBefore);
-        $this->notAfter = new \DateTimeImmutable($notAfter);
         $this->key = $key;
+        $this->notBefore = $notBefore !== null ? new \DateTimeImmutable($notBefore) : null;
+        $this->notAfter = $notAfter !== null ? new \DateTimeImmutable($notAfter) : null;
     }
 
-    public static function createWithRSAKey(string $notBefore, string $notAfter, RSAKeyLength $keyLength): self
+    public static function createWithRSAKey(RSAKeyLength $keyLength, string $notBefore = null, string $notAfter = null): self
     {
-        return new static($notBefore, $notAfter, Key::rsa($keyLength));
+        return new static(Key::rsa($keyLength), $notBefore, $notAfter);
     }
 
-    public static function createWithECKey(string $notBefore, string $notAfter, ECKeyAlgorithm $algorithm): self
+    public static function createWithECKey(ECKeyAlgorithm $algorithm, string $notBefore = null, string $notAfter = null): self
     {
-        return new static($notBefore, $notAfter, Key::ec($algorithm));
+        return new static(Key::ec($algorithm), $notBefore, $notAfter);
     }
 
     public function getNotBefore(): string
     {
-        return $this->notBefore->format(DATE_RFC3339);
+        return $this->notBefore !== null ? $this->notBefore->format(DATE_RFC3339) : '';
     }
 
     public function getNotAfter(): string
     {
-        return $this->notAfter->format(DATE_RFC3339);
+        return $this->notAfter !== null ? $this->notAfter->format(DATE_RFC3339) : '';
     }
 
     public function getKey(): Key
