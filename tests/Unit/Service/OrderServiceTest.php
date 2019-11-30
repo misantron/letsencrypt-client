@@ -190,6 +190,7 @@ class OrderServiceTest extends ApiClientTestCase
 
         // get certificate
         $this->appendResponseFixture('certificate.response');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'IXVHDyxIRGcTE0VSblhPzw']);
 
         $service = $this->createService($connector);
         $service->getCertificate($account, $order, $domain);
