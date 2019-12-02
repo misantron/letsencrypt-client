@@ -134,6 +134,33 @@ class OrderServiceTest extends ApiClientTestCase
     /**
      * @depends testCreate
      */
+    public function testGet(): void
+    {
+        $domain = 'example.org';
+        $subjects = [
+            'www.example.org',
+            'example.org',
+        ];
+
+        $connector = $this->createConnector();
+
+        $this->appendResponseFixture('order.create.response.json');
+        $this->appendResponseFixture('authorization1.response.json');
+        $this->appendResponseFixture('authorization2.response.json');
+
+        $service = $this->createService($connector);
+        $order = $service->get($domain, $subjects);
+
+        $this->assertTrue($order->isPending());
+        $this->assertSame('https://example.com/acme/order/TOlocE8rfgo', $order->getUrl());
+        $this->assertSame('https://example.com/acme/order/TOlocE8rfgo/finalize', $order->getFinalizeUrl());
+        $this->assertSame(['www.example.org', 'example.org'], $order->getIdentifiers());
+        $this->assertCount(2, $order->getAuthorizations());
+    }
+
+    /**
+     * @depends testGet
+     */
     public function testGetCertificate(): void
     {
         $domain = 'example.org';

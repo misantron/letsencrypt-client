@@ -7,13 +7,12 @@ namespace LetsEncrypt\Tests\Unit;
 use LetsEncrypt\Client;
 use LetsEncrypt\Http\Connector;
 use LetsEncrypt\Logger\Logger;
-use LetsEncrypt\Logger\LogStrategy;
 use LetsEncrypt\Service\AccountService;
 use LetsEncrypt\Service\OrderService;
 use LetsEncrypt\Tests\TestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
-use Psr\Log\LoggerInterface;
+use Psr\Log\Test\TestLogger;
 
 class ClientTest extends TestCase
 {
@@ -47,10 +46,7 @@ class ClientTest extends TestCase
 
     public function testConstructorWithLogger(): void
     {
-        $logger = new Logger(
-            $this->createMock(LoggerInterface::class),
-            LogStrategy::requestsOnly()
-        );
+        $logger = new Logger(new TestLogger());
         $client = new Client(
             $this->root->getChild('_account')->url(),
             $this->root->url(),

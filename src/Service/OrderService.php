@@ -127,8 +127,8 @@ class OrderService
     {
         $orderFilePath = $this->getOrderFilePath($basename);
 
-        Assert::fileExists($orderFilePath);
-        Assert::readable($orderFilePath);
+        Assert::fileExists($orderFilePath, 'Order file %s does not exist');
+        Assert::readable($orderFilePath, 'Order file %s is not readable');
 
         try {
             $orderUrl = FileSystem::readFileContent($orderFilePath);
