@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Tests\Unit\Service;
 
+use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Exception\EnvironmentException;
 use LetsEncrypt\Helper\KeyGenerator;
 use LetsEncrypt\Http\Connector;
@@ -25,6 +26,19 @@ class AccountServiceTest extends ApiClientTestCase
         $this->expectExceptionMessage('Account keys directory path "notExistDirectory" is not a directory');
 
         new AccountService('notExistDirectory');
+    }
+
+    public function testGetBeforeCreate(): void
+    {
+        $privateKeyPath = KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY;
+
+        $this->expectException(EnvironmentException::class);
+        $this->expectExceptionMessage('Private key "' . $privateKeyPath . '" does not exist');
+
+        $connector = $this->createConnector();
+
+        $service = $this->createService($connector);
+        $service->get();
     }
 
     public function testCreate(): void

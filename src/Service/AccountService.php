@@ -30,8 +30,8 @@ class AccountService
 
     public function get(): Account
     {
-        Assert::fileExists($this->getPrivateKeyPath());
-        Assert::fileExists($this->getPublicKeyPath());
+        Assert::fileExists($this->getPrivateKeyPath(), 'Private key %s does not exist');
+        Assert::fileExists($this->getPublicKeyPath(), 'Public key %s does not exist');
 
         return $this->getAccount();
     }
