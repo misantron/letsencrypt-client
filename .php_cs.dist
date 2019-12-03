@@ -3,6 +3,14 @@
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 
+$header = <<<'EOF'
+This file is part of the LetsEncrypt ACME client.
+
+@author    Ivanov Aleksandr <misantron@gmail.com>
+@copyright 2019
+@license   https://github.com/misantron/letsencrypt-client/blob/master/LICENSE MIT License
+EOF;
+
 $finder = Finder::create()
     ->exclude('keys')
     ->exclude('tests/keys')
@@ -27,5 +35,6 @@ return Config::create()
         'declare_strict_types' => true,
         'final_internal_class' => true,
         'global_namespace_import' => ['import_classes' => false],
+        'header_comment' => ['header' => $header],
     ])
 ;
