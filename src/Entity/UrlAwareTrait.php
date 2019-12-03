@@ -9,7 +9,7 @@ trait UrlAwareTrait
     /**
      * @var string
      */
-    private $url;
+    protected $url;
 
     public function getUrl(): string
     {

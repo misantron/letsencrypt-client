@@ -15,8 +15,7 @@ final class Order extends Entity
 
     /**
      * Order identifiers
-     * @example {'type':'dns', 'value':'*.example.com'}
-     * @var Identifier[]
+     * @var array
      */
     protected $identifiers;
 

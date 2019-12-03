@@ -35,12 +35,12 @@ class AuthorizationServiceTest extends ApiClientTestCase
 
         $this->assertInstanceOf(Authorization::class, $authorizations[0]);
         $this->assertSame('https://example.com/acme/authz/PAniVnsZcis', $authorizations[0]->getUrl());
-        $this->assertSame('www.example.org', $authorizations[0]->getIdentifier()->getValue());
+        $this->assertSame('www.example.org', $authorizations[0]->getIdentifierValue());
         $this->assertTrue($authorizations[0]->isPending());
 
         $this->assertInstanceOf(Authorization::class, $authorizations[1]);
         $this->assertSame('https://example.com/acme/authz/r4HqLzrSrpI', $authorizations[1]->getUrl());
-        $this->assertSame('*.example.org', $authorizations[1]->getIdentifier()->getValue());
+        $this->assertSame('*.example.org', $authorizations[1]->getIdentifierValue());
         $this->assertTrue($authorizations[1]->isPending());
     }
 }

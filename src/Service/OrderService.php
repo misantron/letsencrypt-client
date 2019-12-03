@@ -162,19 +162,34 @@ class OrderService
         return $order;
     }
 
-    public function getPendingAuthorizations(Account $account, Order $order, string $type): array
+    public function getPendingHttpAuthorizations(Account $account, Order $order): array
     {
-        $digest = $this->connector->getSigner()->kty($account->getPrivateKeyPath());
-        $authorizations = $order->getPendingAuthorizations();
-
-        return $this->authorizationService->getPendingAuthorizations($digest, $authorizations, $type);
+        return $this->authorizationService->getPendingHttpAuthorizations(
+            $order->getPendingAuthorizations(),
+            $this->connector->getSigner()->kty($account->getPrivateKeyPath())
+        );
     }
 
-    public function verifyPendingAuthorization(Account $account, Order $order, string $identifier, string $type): bool
+    public function getPendingDnsAuthorizations(Account $account, Order $order): array
+    {
+        return $this->authorizationService->getPendingDnsAuthorizations(
+            $order->getPendingAuthorizations(),
+            $this->connector->getSigner()->kty($account->getPrivateKeyPath())
+        );
+    }
+
+    public function verifyPendingHttpAuthorization(Account $account, Order $order, string $identifier): bool
     {
         $authorizations = $order->getAuthorizations();
 
-        return $this->authorizationService->verifyPendingAuthorization($account, $authorizations, $identifier, $type);
+        return $this->authorizationService->verifyPendingHttpAuthorization($account, $authorizations, $identifier);
+    }
+
+    public function verifyPendingDnsAuthorization(Account $account, Order $order, string $identifier): bool
+    {
+        $authorizations = $order->getAuthorizations();
+
+        return $this->authorizationService->verifyPendingDnsAuthorization($account, $authorizations, $identifier);
     }
 
     /**
@@ -307,13 +322,11 @@ class OrderService
             $this->getPrivateKeyPath($basename)
         );
 
-        $csrEncoded = $this->connector
-            ->getSigner()
-            ->getBase64Encoder()
-            ->encode(base64_decode($csr));
-
         $payload = [
-            'csr' => $csrEncoded,
+            'csr' => $this->connector
+                ->getSigner()
+                ->getBase64Encoder()
+                ->encode(base64_decode($csr)),
         ];
 
         $response = $this->connector->signedKIDRequest(

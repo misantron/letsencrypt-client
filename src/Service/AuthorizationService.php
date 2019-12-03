@@ -35,39 +35,49 @@ class AuthorizationService
     }
 
     /**
-     * @param string $digest
      * @param Authorization[] $authorizations
-     * @param string $type
+     * @param string $digest
      * @return array
      */
-    public function getPendingAuthorizations(string $digest, array $authorizations, string $type): array
+    public function getPendingHttpAuthorizations(array $authorizations, string $digest): array
     {
         $pendingAuthorizations = [];
 
         foreach ($authorizations as $authorization) {
-            $challenge = $authorization->getChallenge($type);
+            $challenge = $authorization->getHttpChallenge();
             if ($challenge->isPending()) {
                 $keyAuthorization = $challenge->getToken() . '.' . $digest;
-                switch (true) {
-                    case $challenge->isHttp():
-                        $pendingAuthorizations[] = [
-                            'type' => $type,
-                            'identifier' => $authorization->getIdentifier()->getValue(),
-                            'filename' => $challenge->getToken(),
-                            'content' => $keyAuthorization,
-                        ];
-                        break;
-                    case $challenge->isDns():
-                        $pendingAuthorizations[] = [
-                            'type' => $type,
-                            'identifier' => $authorization->getIdentifier()->getValue(),
-                            'dnsDigest' => $this->connector
-                                ->getSigner()
-                                ->getBase64Encoder()
-                                ->hashEncode($keyAuthorization),
-                        ];
-                        break;
-                }
+                $pendingAuthorizations[] = [
+                    'identifier' => $authorization->getIdentifierValue(),
+                    'filename' => $challenge->getToken(),
+                    'content' => $keyAuthorization,
+                ];
+            }
+        }
+
+        return $pendingAuthorizations;
+    }
+
+    /**
+     * @param Authorization[] $authorizations
+     * @param string $digest
+     * @return array
+     */
+    public function getPendingDnsAuthorizations(array $authorizations, string $digest): array
+    {
+        $pendingAuthorizations = [];
+
+        foreach ($authorizations as $authorization) {
+            $challenge = $authorization->getDnsChallenge();
+            if ($challenge->isPending()) {
+                $keyAuthorization = $challenge->getToken() . '.' . $digest;
+                $pendingAuthorizations[] = [
+                    'identifier' => $authorization->getIdentifierValue(),
+                    'dnsDigest' => $this->connector
+                        ->getSigner()
+                        ->getBase64Encoder()
+                        ->hashEncode($keyAuthorization),
+                ];
             }
         }
 
@@ -78,69 +88,79 @@ class AuthorizationService
      * @param Account $account
      * @param Authorization[] $authorizations
      * @param string $identifier
-     * @param string $type
      * @return bool
      */
-    public function verifyPendingAuthorization(
-        Account $account,
-        array $authorizations,
-        string $identifier,
-        string $type
-    ): bool {
+    public function verifyPendingHttpAuthorization(Account $account, array $authorizations, string $identifier): bool
+    {
         $digest = $this->connector->getSigner()->kty($account->getPrivateKeyPath());
 
         foreach ($authorizations as $authorization) {
-            if ($authorization->isPending() && $authorization->getIdentifier()->getValue() === $identifier) {
-                $challenge = $authorization->getChallenge($type);
+            if ($authorization->isPending() && $authorization->isIdentifierValueEqual($identifier)) {
+                $challenge = $authorization->getHttpChallenge();
                 if ($challenge->isPending()) {
                     $keyAuthorization = $challenge->getToken() . '.' . $digest;
 
-                    switch (true) {
-                        case $challenge->isHttp():
-                            if ($this->verifyHttpChallenge($identifier, $challenge->getToken(), $keyAuthorization)) {
-                                $payload = [
-                                    'keyAuthorization' => $keyAuthorization,
-                                ];
-                                $response = $this->connector->signedKIDRequest(
-                                    $account->getUrl(),
-                                    $challenge->getUrl(),
-                                    $payload,
-                                    $account->getPrivateKeyPath()
-                                );
-                                if ($response->isStatusOk()) {
-                                    while ($authorization->isPending()) {
-                                        sleep(1);
-                                        $authorization = $this->updateAuthorization($authorization->getUrl());
-                                    }
-                                    return true;
-                                }
+                    if ($this->verifyHttpChallenge($identifier, $challenge->getToken(), $keyAuthorization)) {
+                        $payload = [
+                            'keyAuthorization' => $keyAuthorization,
+                        ];
+                        $response = $this->connector->signedKIDRequest(
+                            $account->getUrl(),
+                            $challenge->getUrl(),
+                            $payload,
+                            $account->getPrivateKeyPath()
+                        );
+                        if ($response->isStatusOk()) {
+                            while ($authorization->isPending()) {
+                                sleep(1);
+                                $authorization = $this->updateAuthorization($authorization->getUrl());
                             }
-                            break;
-                        case $challenge->isDns():
-                            if ($this->verifyDnsChallenge($identifier, $keyAuthorization)) {
-                                $payload = [
-                                    'keyAuthorization' => $keyAuthorization,
-                                ];
-                                $response = $this->connector->signedKIDRequest(
-                                    $account->getUrl(),
-                                    $challenge->getUrl(),
-                                    $payload,
-                                    $account->getPrivateKeyPath()
-                                );
-                                if ($response->isStatusOk()) {
-                                    while ($authorization->isPending()) {
-                                        sleep(1);
-                                        $authorization = $this->updateAuthorization($authorization->getUrl());
-                                    }
-                                    return true;
-                                }
-                            }
-                            break;
+                            return true;
+                        }
                     }
                 }
             }
         }
+        return false;
+    }
 
+    /**
+     * @param Account $account
+     * @param Authorization[] $authorizations
+     * @param string $identifier
+     * @return bool
+     */
+    public function verifyPendingDnsAuthorization(Account $account, array $authorizations, string $identifier): bool
+    {
+        $digest = $this->connector->getSigner()->kty($account->getPrivateKeyPath());
+
+        foreach ($authorizations as $authorization) {
+            if ($authorization->isPending() && $authorization->isIdentifierValueEqual($identifier)) {
+                $challenge = $authorization->getDnsChallenge();
+                if ($challenge->isPending()) {
+                    $keyAuthorization = $challenge->getToken() . '.' . $digest;
+
+                    if ($this->verifyDnsChallenge($identifier, $keyAuthorization)) {
+                        $payload = [
+                            'keyAuthorization' => $keyAuthorization,
+                        ];
+                        $response = $this->connector->signedKIDRequest(
+                            $account->getUrl(),
+                            $challenge->getUrl(),
+                            $payload,
+                            $account->getPrivateKeyPath()
+                        );
+                        if ($response->isStatusOk()) {
+                            while ($authorization->isPending()) {
+                                sleep(1);
+                                $authorization = $this->updateAuthorization($authorization->getUrl());
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
         return false;
     }
 

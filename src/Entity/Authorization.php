@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Entity;
 
+use LetsEncrypt\Exception\ChallengeException;
+
 final class Authorization extends Entity
 {
     use UrlAwareTrait;
@@ -19,7 +21,7 @@ final class Authorization extends Entity
     public $expires;
 
     /**
-     * @var array
+     * @var Challenge[]
      */
     protected $challenges;
 
@@ -30,31 +32,59 @@ final class Authorization extends Entity
 
     public function __construct(array $data, string $url)
     {
+        $data['challenges'] = array_map(static function (array $entry) {
+            return new Challenge($entry);
+        }, $data['challenges']);
+
         parent::__construct($data);
 
         $this->url = $url;
     }
 
     /**
-     * @param string $type
      * @return Challenge
-     * @throws \InvalidArgumentException
+     *
+     * @throws ChallengeException
      */
-    public function getChallenge(string $type): Challenge
+    public function getHttpChallenge(): Challenge
     {
         foreach ($this->challenges as $challenge) {
-            if ($challenge['type'] === $type) {
-                return new Challenge($challenge);
+            if ($challenge->isHttp()) {
+                return $challenge;
             }
         }
-        throw new \InvalidArgumentException('Unknown challenge type provided');
+        throw new ChallengeException('http');
     }
 
     /**
-     * @return Identifier
+     * @return Challenge
+     *
+     * @throws ChallengeException
      */
-    public function getIdentifier(): Identifier
+    public function getDnsChallenge(): Challenge
     {
-        return new Identifier($this->identifier);
+        foreach ($this->challenges as $challenge) {
+            if ($challenge->isDns()) {
+                return $challenge;
+            }
+        }
+        throw new ChallengeException('dns');
+    }
+
+    /**
+     * @return string
+     */
+    public function getIdentifierValue(): string
+    {
+        return $this->identifier['value'];
+    }
+
+    /**
+     * @param string $identifier
+     * @return bool
+     */
+    public function isIdentifierValueEqual(string $identifier): bool
+    {
+        return $this->identifier['value'] === $identifier;
     }
 }

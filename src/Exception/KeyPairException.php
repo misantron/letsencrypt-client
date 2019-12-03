@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Exception;
 
-class KeyPairException extends OpenSSLException
+final class KeyPairException extends OpenSSLException
 {
     public static function privateKeyDetailsError(): self
     {

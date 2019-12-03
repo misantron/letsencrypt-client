@@ -7,6 +7,7 @@ namespace LetsEncrypt\Tests\Unit\Service;
 use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Certificate\Certificate;
 use LetsEncrypt\Entity\Account;
+use LetsEncrypt\Entity\Authorization;
 use LetsEncrypt\Entity\Order;
 use LetsEncrypt\Enum\RSAKeyLength;
 use LetsEncrypt\Exception\EnvironmentException;
@@ -129,6 +130,92 @@ class OrderServiceTest extends ApiClientTestCase
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo/finalize', $order->getFinalizeUrl());
         $this->assertSame(['www.example.org', 'example.org'], $order->getIdentifiers());
         $this->assertCount(2, $order->getAuthorizations());
+    }
+
+    /**
+     * @depends testCreate
+     */
+    public function testGetPendingAuthorizations(): void
+    {
+        $account = new Account(
+            [],
+            'https://example.com/acme/acct/evOfKhNU60wg',
+            KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY
+        );
+        $order = new Order(
+            [
+                'identifiers' => [
+                    [
+                        'type' => 'dns',
+                        'value' => 'www.example.org',
+                    ],
+                    [
+                        'type' => 'dns',
+                        'value' => 'example.org',
+                    ],
+                ],
+                'authorizations' => [
+                    new Authorization(
+                        [
+                            'status' => 'pending',
+                            'identifier' => [
+                                'type' => 'dns',
+                                'value' => 'www.example.org',
+                            ],
+                            'challenges' => [
+                                [
+                                    'status' => 'pending',
+                                    'type' => 'http-01',
+                                    'url' => 'https://example.com/acme/chall/prV_B7yEyA4',
+                                    'token' => 'DGyRejmCefe7v4NfDGDKfA',
+                                ],
+                                [
+                                    'status' => 'pending',
+                                    'type' => 'dns-01',
+                                    'url' => 'https://example.com/acme/chall/Rg5dV14Gh1Q',
+                                    'token' => 'DGyRejmCefe7v4NfDGDKfA',
+                                ],
+                            ],
+                        ],
+                        'https://example.com/acme/authz/PAniVnsZcis'
+                    ),
+                    new Authorization(
+                        [
+                            'status' => 'valid',
+                            'identifier' => [
+                                'type' => 'dns',
+                                'value' => 'example.org',
+                            ],
+                            'challenges' => [],
+                        ],
+                        'https://example.com/acme/authz/r4HqLzrSrpI'
+                    )
+                ],
+            ],
+            'https://example.com/acme/order/4E16bbL5iSw'
+        );
+
+        $connector = $this->createConnector();
+
+        $service = $this->createService($connector);
+
+        // test http authorizations
+        $authorizations = $service->getPendingHttpAuthorizations($account, $order);
+
+        $this->assertCount(1, $authorizations);
+        $this->assertArrayHasKey('identifier', $authorizations[0]);
+        $this->assertSame('www.example.org', $authorizations[0]['identifier']);
+        $this->assertArrayHasKey('filename', $authorizations[0]);
+        $this->assertSame('DGyRejmCefe7v4NfDGDKfA', $authorizations[0]['filename']);
+        $this->assertArrayHasKey('content', $authorizations[0]);
+
+        // test dns authorizations
+        $authorizations = $service->getPendingDnsAuthorizations($account, $order);
+
+        $this->assertCount(1, $authorizations);
+        $this->assertArrayHasKey('identifier', $authorizations[0]);
+        $this->assertSame('www.example.org', $authorizations[0]['identifier']);
+        $this->assertArrayHasKey('dnsDigest', $authorizations[0]);
     }
 
     /**
