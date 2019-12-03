@@ -1,0 +1,31 @@
+<?php
+
+use PhpCsFixer\Config;
+use PhpCsFixer\Finder;
+
+$finder = Finder::create()
+    ->exclude('keys')
+    ->exclude('tests/keys')
+    ->exclude('tests/fixtures')
+    ->notPath('tests/bootstrap.php')
+    ->in(__DIR__)
+;
+
+return Config::create()
+    ->setFinder($finder)
+    ->setRiskyAllowed(true)
+    ->setRules([
+        '@PSR2' => true,
+        '@Symfony' => true,
+        'array_syntax' => ['syntax' => 'short'],
+        'cast_spaces' => ['space' => 'single'],
+        'yoda_style' => false,
+        'concat_space' => ['spacing' => 'one'],
+        'phpdoc_annotation_without_dot' => true,
+        'combine_consecutive_unsets' => true,
+        'date_time_immutable' => true,
+        'declare_strict_types' => true,
+        'final_internal_class' => true,
+        'global_namespace_import' => ['import_classes' => false],
+    ])
+;

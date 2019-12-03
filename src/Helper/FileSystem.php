@@ -9,9 +9,6 @@ use LetsEncrypt\Exception\FileIOException;
 final class FileSystem
 {
     /**
-     * @param string $path
-     * @return string
-     *
      * @throws FileIOException
      */
     public static function readFileContent(string $path): string
@@ -22,6 +19,7 @@ final class FileSystem
             if ($content === false) {
                 throw new \RuntimeException('content read error');
             }
+
             return $content;
         } catch (\Exception $e) {
             throw FileIOException::readError($path, $e);
@@ -29,9 +27,6 @@ final class FileSystem
     }
 
     /**
-     * @param string $path
-     * @param string $content
-     *
      * @throws FileIOException
      */
     public static function writeFileContent(string $path, string $content): void

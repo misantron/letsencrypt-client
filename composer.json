@@ -9,9 +9,10 @@
         "guzzlehttp/guzzle": "^6.4",
         "psr/log": "^1.1",
         "spatie/enum": "^2.3",
-        "webmozart/assert": "^1.5"
+        "webmozart/assert": "^1.6"
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^2.16",
         "mikey179/vfsstream": "^1.6",
         "php-coveralls/php-coveralls": "^2.2",
         "phpunit/phpunit": "^8.4",
@@ -29,5 +30,10 @@
     },
     "config": {
         "sort-packages": true
+    },
+    "scripts": {
+        "tests": "php vendor/bin/phpunit --testsuite unit --verbose",
+        "code-sniffer": "php vendor/bin/phpcs",
+        "code-style-fixer": "php vendor/bin/php-cs-fixer fix --config=.php_cs.dist -v --diff"
     }
 }

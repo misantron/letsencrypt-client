@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Tests;
 
-trait AssertObjectProperty
+trait AssertObjectPropertyTrait
 {
     public function assertPropertySame($expected, string $attributeName, $actual): void
     {

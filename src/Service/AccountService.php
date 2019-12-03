@@ -25,7 +25,7 @@ class AccountService
     {
         Assert::directory($keysPath, 'Account keys directory path %s is not a directory');
 
-        $this->keysPath = $keysPath;
+        $this->keysPath = rtrim($keysPath, DIRECTORY_SEPARATOR);
     }
 
     public function get(): Account

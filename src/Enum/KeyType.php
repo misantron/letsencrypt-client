@@ -7,13 +7,11 @@ namespace LetsEncrypt\Enum;
 use Spatie\Enum\Enum;
 
 /**
- * Class KeyType
- * @package LEClient\Enum
+ * Class KeyType.
  *
  * @method static self rsa()
  * @method static self ec()
  */
 final class KeyType extends Enum
 {
-
 }

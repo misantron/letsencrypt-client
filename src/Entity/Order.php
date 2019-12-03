@@ -14,7 +14,8 @@ final class Order extends Entity
     public $expires;
 
     /**
-     * Order identifiers
+     * Order identifiers.
+     *
      * @var array
      */
     protected $identifiers;
@@ -25,13 +26,15 @@ final class Order extends Entity
     protected $authorizations;
 
     /**
-     * Order finalize URL
+     * Order finalize URL.
+     *
      * @var string
      */
     protected $finalize;
 
     /**
-     * Certificate request URL
+     * Certificate request URL.
+     *
      * @var string
      */
     protected $certificate;
@@ -69,6 +72,7 @@ final class Order extends Entity
                 $authorizations[] = $authorization;
             }
         }
+
         return $authorizations;
     }
 
@@ -87,6 +91,7 @@ final class Order extends Entity
                 return false;
             }
         }
+
         return true;
     }
 

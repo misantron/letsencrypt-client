@@ -24,7 +24,6 @@ class AuthorizationService
     }
 
     /**
-     * @param array $urls
      * @return Authorization[]
      */
     public function getAuthorizations(array $urls): array
@@ -36,8 +35,6 @@ class AuthorizationService
 
     /**
      * @param Authorization[] $authorizations
-     * @param string $digest
-     * @return array
      */
     public function getPendingHttpAuthorizations(array $authorizations, string $digest): array
     {
@@ -60,8 +57,6 @@ class AuthorizationService
 
     /**
      * @param Authorization[] $authorizations
-     * @param string $digest
-     * @return array
      */
     public function getPendingDnsAuthorizations(array $authorizations, string $digest): array
     {
@@ -85,10 +80,7 @@ class AuthorizationService
     }
 
     /**
-     * @param Account $account
      * @param Authorization[] $authorizations
-     * @param string $identifier
-     * @return bool
      */
     public function verifyPendingHttpAuthorization(Account $account, array $authorizations, string $identifier): bool
     {
@@ -115,20 +107,19 @@ class AuthorizationService
                                 sleep(1);
                                 $authorization = $this->updateAuthorization($authorization->getUrl());
                             }
+
                             return true;
                         }
                     }
                 }
             }
         }
+
         return false;
     }
 
     /**
-     * @param Account $account
      * @param Authorization[] $authorizations
-     * @param string $identifier
-     * @return bool
      */
     public function verifyPendingDnsAuthorization(Account $account, array $authorizations, string $identifier): bool
     {
@@ -155,12 +146,14 @@ class AuthorizationService
                                 sleep(1);
                                 $authorization = $this->updateAuthorization($authorization->getUrl());
                             }
+
                             return true;
                         }
                     }
                 }
             }
         }
+
         return false;
     }
 

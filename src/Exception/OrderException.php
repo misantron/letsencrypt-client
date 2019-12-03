@@ -6,5 +6,4 @@ namespace LetsEncrypt\Exception;
 
 final class OrderException extends \RuntimeException
 {
-
 }

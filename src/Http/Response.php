@@ -21,9 +21,7 @@ final class Response
     }
 
     /**
-     * Check if response return 200 status code
-     *
-     * @return bool
+     * Check if response return 200 status code.
      */
     public function isStatusOk(): bool
     {

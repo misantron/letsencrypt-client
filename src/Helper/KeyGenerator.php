@@ -11,11 +11,6 @@ use LetsEncrypt\Exception\KeyPairException;
 
 final class KeyGenerator
 {
-    /**
-     * @param string $privateKeyPath
-     * @param string $publicKeyPath
-     * @param RSAKeyLength|null $length
-     */
     public function rsa(string $privateKeyPath, string $publicKeyPath, RSAKeyLength $length = null): void
     {
         if ($length === null) {
@@ -32,11 +27,6 @@ final class KeyGenerator
         );
     }
 
-    /**
-     * @param string $privateKeyPath
-     * @param string $publicKeyPath
-     * @param ECKeyAlgorithm|null $type
-     */
     public function ec(string $privateKeyPath, string $publicKeyPath, ECKeyAlgorithm $type = null): void
     {
         if ($type === null) {
@@ -54,11 +44,6 @@ final class KeyGenerator
     }
 
     /**
-     * @param string $commonName
-     * @param array $subjects
-     * @param string $privateKeyPath
-     * @return string
-     *
      * @throws KeyGeneratorException
      * @throws KeyPairException
      */
@@ -109,11 +94,7 @@ final class KeyGenerator
     }
 
     /**
-     * Create OpenSSL key pair and store in file system
-     *
-     * @param array $config
-     * @param string $privateKeyPath
-     * @param string $publicKeyPath
+     * Create OpenSSL key pair and store in file system.
      *
      * @throws KeyGeneratorException
      * @throws KeyPairException

@@ -6,16 +6,16 @@ namespace LetsEncrypt\Service;
 
 use GuzzleHttp\Exception\TransferException;
 use LetsEncrypt\Assertion\Assert;
-use LetsEncrypt\Certificate\Certificate;
 use LetsEncrypt\Certificate\Bundle;
+use LetsEncrypt\Certificate\Certificate;
 use LetsEncrypt\Certificate\RevocationReason;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Order;
 use LetsEncrypt\Exception\EnvironmentException;
 use LetsEncrypt\Exception\FileIOException;
 use LetsEncrypt\Exception\OrderException;
-use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Helper\FileSystem;
+use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Http\ConnectorAwareTrait;
 use LetsEncrypt\Http\Response;
 
@@ -39,16 +39,10 @@ class OrderService
         Assert::directory($filesPath, 'Certificates directory path %s is not a directory');
 
         $this->authorizationService = $authorizationService;
-        $this->filesPath = $filesPath;
+        $this->filesPath = rtrim($filesPath, DIRECTORY_SEPARATOR);
     }
 
     /**
-     * @param Account $account
-     * @param string $basename
-     * @param array $subjects
-     * @param Certificate $certificate
-     * @return Order
-     *
      * @throws EnvironmentException
      * @throws OrderException
      */
@@ -117,10 +111,6 @@ class OrderService
     }
 
     /**
-     * @param string $basename
-     * @param array $subjects
-     * @return Order
-     *
      * @throws OrderException
      */
     public function get(string $basename, array $subjects): Order
@@ -193,10 +183,6 @@ class OrderService
     }
 
     /**
-     * @param Account $account
-     * @param Order $order
-     * @param string $basename
-     *
      * @throws OrderException
      */
     public function getCertificate(Account $account, Order $order, string $basename): void
@@ -238,12 +224,6 @@ class OrderService
         }
     }
 
-    /**
-     * @param Account $account
-     * @param string $basename
-     * @param RevocationReason|null $reason
-     * @return bool
-     */
     public function revokeCertificate(Account $account, string $basename, RevocationReason $reason = null): bool
     {
         $certificatePrivateKeyPath = $this->getPrivateKeyPath($basename);
@@ -280,10 +260,6 @@ class OrderService
         return $response->isStatusOk();
     }
 
-    /**
-     * @param string $content
-     * @return array
-     */
     private function extractCertificates(string $content): array
     {
         $pattern = '~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i';
@@ -308,12 +284,6 @@ class OrderService
         return $files;
     }
 
-    /**
-     * @param Account $account
-     * @param Order $order
-     * @param string $basename
-     * @return Order
-     */
     private function finalize(Account $account, Order $order, string $basename): Order
     {
         $csr = $this->keyGenerator->csr(
@@ -339,11 +309,6 @@ class OrderService
         return $this->createOrderFromResponse($response, $order->getUrl());
     }
 
-    /**
-     * @param Response $response
-     * @param string $url
-     * @return Order
-     */
     private function createOrderFromResponse(Response $response, string $url): Order
     {
         $data = $response->getDecodedContent();

@@ -31,13 +31,19 @@ final class Certificate
         $this->notAfter = $notAfter !== null ? new \DateTimeImmutable($notAfter) : null;
     }
 
-    public static function createWithRSAKey(RSAKeyLength $keyLength, string $notBefore = null, string $notAfter = null): self
-    {
+    public static function createWithRSAKey(
+        RSAKeyLength $keyLength,
+        string $notBefore = null,
+        string $notAfter = null
+    ): self {
         return new static(Key::rsa($keyLength), $notBefore, $notAfter);
     }
 
-    public static function createWithECKey(ECKeyAlgorithm $algorithm, string $notBefore = null, string $notAfter = null): self
-    {
+    public static function createWithECKey(
+        ECKeyAlgorithm $algorithm,
+        string $notBefore = null,
+        string $notAfter = null
+    ): self {
         return new static(Key::ec($algorithm), $notBefore, $notAfter);
     }
 

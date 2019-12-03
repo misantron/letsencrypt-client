@@ -14,10 +14,8 @@ use LetsEncrypt\Helper\Base64SafeEncoder;
 use LetsEncrypt\Http\Connector;
 use Psr\Http\Message\RequestInterface;
 
-abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
+abstract class ApiClientTestCase extends TestCase
 {
-    use AssertObjectProperty;
-
     /**
      * @var MockHandler
      */
@@ -92,6 +90,7 @@ abstract class ApiClientTestCase extends \PHPUnit\Framework\TestCase
                 if ($expectedPayload !== null) {
                     $this->assertRequestPayload($request, $expectedPayload);
                 }
+
                 return $response;
             }
         );

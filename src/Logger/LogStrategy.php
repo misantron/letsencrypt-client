@@ -7,8 +7,7 @@ namespace LetsEncrypt\Logger;
 use Spatie\Enum\Enum;
 
 /**
- * Class LogStrategy
- * @package LetsEncrypt\Logger
+ * Class LogStrategy.
  *
  * @method static self requestsOnly()
  * @method static self errorsOnly()
@@ -16,5 +15,4 @@ use Spatie\Enum\Enum;
  */
 final class LogStrategy extends Enum
 {
-
 }

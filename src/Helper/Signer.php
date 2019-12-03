@@ -29,12 +29,6 @@ final class Signer implements SignerInterface
     }
 
     /**
-     * @param array $payload
-     * @param string $url
-     * @param string $nonce
-     * @param string $privateKeyPath
-     * @return array
-     *
      * @throws KeyPairException
      */
     public function jws(array $payload, string $url, string $nonce, string $privateKeyPath): array
@@ -64,13 +58,6 @@ final class Signer implements SignerInterface
     }
 
     /**
-     * @param array $payload
-     * @param string $kid
-     * @param string $url
-     * @param string $nonce
-     * @param string $privateKeyPath
-     * @return array
-     *
      * @throws KeyPairException
      */
     public function kid(array $payload, string $kid, string $url, string $nonce, string $privateKeyPath): array
@@ -91,9 +78,6 @@ final class Signer implements SignerInterface
     }
 
     /**
-     * @param string $privateKeyPath
-     * @return string
-     *
      * @throws KeyPairException
      */
     public function kty(string $privateKeyPath): string

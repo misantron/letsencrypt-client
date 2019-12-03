@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace LetsEncrypt\Http;
 
 /**
- * Class GooglePublicDNS
- * @package LetsEncrypt\Http
+ * Class GooglePublicDNS.
  *
  * @see https://developers.google.com/speed/public-dns/docs/doh/json
  */
@@ -37,6 +36,7 @@ final class GooglePublicDNS
                 }
             }
         }
+
         return false;
     }
 }

@@ -9,7 +9,7 @@ use LetsEncrypt\Exception\EnvironmentException;
 final class Assert extends \Webmozart\Assert\Assert
 {
     /**
-     * Throw EnvironmentException instead of default InvalidArgumentException
+     * Throw EnvironmentException instead of default InvalidArgumentException.
      *
      * @param string $message
      */

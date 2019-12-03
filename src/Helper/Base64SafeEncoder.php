@@ -17,6 +17,7 @@ final class Base64SafeEncoder
         if ($remainder) {
             $input .= str_repeat('=', 4 - $remainder);
         }
+
         return base64_decode(strtr($input, '-_', '+/'));
     }
 

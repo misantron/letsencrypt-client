@@ -94,12 +94,6 @@ final class Connector
         return $this->endpoint->revokeCert;
     }
 
-    /**
-     * @param string $url
-     * @param array $payload
-     * @param string $privateKeyPath
-     * @return Response
-     */
     public function signedJWSRequest(string $url, array $payload, string $privateKeyPath): Response
     {
         $sign = $this->signer->jws($payload, $url, $this->nonce, $privateKeyPath);
@@ -107,13 +101,6 @@ final class Connector
         return $this->request('POST', $url, $sign);
     }
 
-    /**
-     * @param string $kid
-     * @param string $url
-     * @param array $payload
-     * @param string $privateKeyPath
-     * @return Response
-     */
     public function signedKIDRequest(string $kid, string $url, array $payload, string $privateKeyPath): Response
     {
         $sign = $this->signer->kid($payload, $kid, $url, $this->nonce, $privateKeyPath);

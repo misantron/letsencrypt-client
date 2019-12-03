@@ -15,9 +15,13 @@ class AccountServiceTest extends ApiClientTestCase
 {
     public function testConstructor(): void
     {
-        $service = new AccountService(KEYS_PATH);
+        $service = new AccountService(static::getKeysPath());
 
-        $this->assertPropertySame(KEYS_PATH, 'keysPath', $service);
+        $this->assertPropertySame(
+            rtrim(static::getKeysPath(), DIRECTORY_SEPARATOR),
+            'keysPath',
+            $service
+        );
     }
 
     public function testConstructorWithInvalidKeysPath(): void
@@ -30,7 +34,7 @@ class AccountServiceTest extends ApiClientTestCase
 
     public function testGetBeforeCreate(): void
     {
-        $privateKeyPath = KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY;
+        $privateKeyPath = static::getKeysPath() . Bundle::PRIVATE_KEY;
 
         $this->expectException(EnvironmentException::class);
         $this->expectExceptionMessage('Private key "' . $privateKeyPath . '" does not exist');
@@ -62,7 +66,7 @@ class AccountServiceTest extends ApiClientTestCase
             [
                 'contact' => [
                     'mailto:cert-admin@example.org',
-                    'mailto:admin@example.org'
+                    'mailto:admin@example.org',
                 ],
                 'termsOfServiceAgreed' => true,
             ]
@@ -73,7 +77,7 @@ class AccountServiceTest extends ApiClientTestCase
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
             'mailto:cert-admin@example.org',
-            'mailto:admin@example.org'
+            'mailto:admin@example.org',
         ], $account->contact);
         $this->assertSame('46.231.212.68', $account->initialIp);
         $this->assertTrue($account->isValid());
@@ -107,7 +111,7 @@ class AccountServiceTest extends ApiClientTestCase
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
             'mailto:cert-admin@example.org',
-            'mailto:admin@example.org'
+            'mailto:admin@example.org',
         ], $account->contact);
         $this->assertSame('46.231.212.68', $account->initialIp);
         $this->assertTrue($account->isValid());
@@ -151,7 +155,7 @@ class AccountServiceTest extends ApiClientTestCase
             ],
             [
                 'contact' => [
-                    'mailto:admin@example.org'
+                    'mailto:admin@example.org',
                 ],
             ]
         );
@@ -160,7 +164,7 @@ class AccountServiceTest extends ApiClientTestCase
 
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
-            'mailto:admin@example.org'
+            'mailto:admin@example.org',
         ], $account->contact);
         $this->assertSame('46.231.212.68', $account->initialIp);
         $this->assertTrue($account->isValid());
@@ -207,7 +211,7 @@ class AccountServiceTest extends ApiClientTestCase
 
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
-            'mailto:admin@example.org'
+            'mailto:admin@example.org',
         ], $account->contact);
         $this->assertSame('46.231.212.68', $account->initialIp);
         $this->assertTrue($account->isDeactivated());
@@ -217,7 +221,7 @@ class AccountServiceTest extends ApiClientTestCase
 
     private function createService(Connector $connector): AccountService
     {
-        $service = new AccountService(KEYS_PATH);
+        $service = new AccountService(static::getKeysPath());
         $service->setKeyGenerator(new KeyGenerator());
         $service->setConnector($connector);
 

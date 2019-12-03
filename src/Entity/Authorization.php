@@ -42,8 +42,6 @@ final class Authorization extends Entity
     }
 
     /**
-     * @return Challenge
-     *
      * @throws ChallengeException
      */
     public function getHttpChallenge(): Challenge
@@ -57,8 +55,6 @@ final class Authorization extends Entity
     }
 
     /**
-     * @return Challenge
-     *
      * @throws ChallengeException
      */
     public function getDnsChallenge(): Challenge
@@ -71,18 +67,11 @@ final class Authorization extends Entity
         throw new ChallengeException('dns');
     }
 
-    /**
-     * @return string
-     */
     public function getIdentifierValue(): string
     {
         return $this->identifier['value'];
     }
 
-    /**
-     * @param string $identifier
-     * @return bool
-     */
     public function isIdentifierValueEqual(string $identifier): bool
     {
         return $this->identifier['value'] === $identifier;

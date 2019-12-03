@@ -28,6 +28,7 @@ final class LogMiddleware
             if ($this->logger->logRequestsOnly()) {
                 $this->logRequest($request);
             }
+
             return $handler($request, $options)
                 ->then(
                     $this->handleSuccess($request),
@@ -50,6 +51,7 @@ final class LogMiddleware
                 ];
                 $this->logger->log($level, 'succeed request', $context);
             }
+
             return $response;
         };
     }
@@ -72,6 +74,7 @@ final class LogMiddleware
                 }
                 $this->logger->log($level, 'failed request', $context);
             }
+
             return rejection_for($reason);
         };
     }

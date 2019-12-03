@@ -33,12 +33,14 @@ final class Key
     public static function rsa(RSAKeyLength $length): self
     {
         $key = new static(KeyType::rsa());
+
         return $key->setLength($length);
     }
 
     public static function ec(ECKeyAlgorithm $algorithm): self
     {
         $key = new static(KeyType::ec());
+
         return $key->setAlgorithm($algorithm);
     }
 

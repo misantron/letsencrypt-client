@@ -6,5 +6,4 @@ namespace LetsEncrypt\Exception;
 
 final class EnvironmentException extends \InvalidArgumentException
 {
-
 }

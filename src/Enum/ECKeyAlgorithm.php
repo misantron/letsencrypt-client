@@ -7,13 +7,11 @@ namespace LetsEncrypt\Enum;
 use Spatie\Enum\Enum;
 
 /**
- * Class ECKeyType
- * @package LEClient\Enum
+ * Class ECKeyType.
  *
  * @method static self prime256v1()
  * @method static self secp384r1()
  */
 final class ECKeyAlgorithm extends Enum
 {
-
 }

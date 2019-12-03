@@ -6,5 +6,4 @@ namespace LetsEncrypt\Exception;
 
 abstract class OpenSSLException extends \RuntimeException
 {
-
 }

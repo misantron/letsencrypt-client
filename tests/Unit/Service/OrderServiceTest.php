@@ -26,8 +26,8 @@ class OrderServiceTest extends ApiClientTestCase
         // generate account key pair
         $keyGenerator = new KeyGenerator();
         $keyGenerator->rsa(
-            KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY,
-            KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PUBLIC_KEY
+            static::getKeysPath() . Bundle::PRIVATE_KEY,
+            static::getKeysPath() . Bundle::PUBLIC_KEY
         );
     }
 
@@ -36,7 +36,7 @@ class OrderServiceTest extends ApiClientTestCase
         parent::tearDownAfterClass();
 
         // cleanup certificate directory
-        $certificateDirectoryPath = KEYS_PATH . DIRECTORY_SEPARATOR . 'example.org' . DIRECTORY_SEPARATOR;
+        $certificateDirectoryPath = static::getKeysPath() . 'example.org' . DIRECTORY_SEPARATOR;
         $filesList = scandir($certificateDirectoryPath);
         if ($filesList !== false) {
             // remove all files from directory
@@ -49,20 +49,24 @@ class OrderServiceTest extends ApiClientTestCase
             rmdir($certificateDirectoryPath);
         }
         // remove account key pair
-        if (file_exists(KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY)) {
-            unlink(KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY);
+        if (file_exists(static::getKeysPath() . Bundle::PRIVATE_KEY)) {
+            unlink(static::getKeysPath() . Bundle::PRIVATE_KEY);
         }
-        if (file_exists(KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PUBLIC_KEY)) {
-            unlink(KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PUBLIC_KEY);
+        if (file_exists(static::getKeysPath() . Bundle::PUBLIC_KEY)) {
+            unlink(static::getKeysPath() . Bundle::PUBLIC_KEY);
         }
     }
 
     public function testConstructor(): void
     {
-        $service = new OrderService(new AuthorizationService(), KEYS_PATH);
+        $service = new OrderService(new AuthorizationService(), static::getKeysPath());
 
         $this->assertPropertyInstanceOf(AuthorizationService::class, 'authorizationService', $service);
-        $this->assertPropertySame(KEYS_PATH, 'filesPath', $service);
+        $this->assertPropertySame(
+            rtrim(static::getKeysPath(), DIRECTORY_SEPARATOR),
+            'filesPath',
+            $service
+        );
     }
 
     public function testConstructorWithInvalidFilesPath(): void
@@ -83,7 +87,7 @@ class OrderServiceTest extends ApiClientTestCase
         $account = new Account(
             [],
             'https://example.com/acme/acct/evOfKhNU60wg',
-            KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY
+            static::getKeysPath() . Bundle::PRIVATE_KEY
         );
         $certificate = Certificate::createWithRSAKey(RSAKeyLength::bit4096());
 
@@ -119,7 +123,7 @@ class OrderServiceTest extends ApiClientTestCase
         $service = $this->createService($connector);
         $order = $service->create($account, $domain, $subjects, $certificate);
 
-        $this->assertDirectoryExists(KEYS_PATH . DIRECTORY_SEPARATOR . $domain);
+        $this->assertDirectoryExists(static::getKeysPath() . $domain);
         $this->assertFileExists($service->getOrderFilePath($domain));
         $this->assertFileExists($service->getPrivateKeyPath($domain));
         $this->assertFileExists($service->getPublicKeyPath($domain));
@@ -140,7 +144,7 @@ class OrderServiceTest extends ApiClientTestCase
         $account = new Account(
             [],
             'https://example.com/acme/acct/evOfKhNU60wg',
-            KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY
+            static::getKeysPath() . Bundle::PRIVATE_KEY
         );
         $order = new Order(
             [
@@ -189,7 +193,7 @@ class OrderServiceTest extends ApiClientTestCase
                             'challenges' => [],
                         ],
                         'https://example.com/acme/authz/r4HqLzrSrpI'
-                    )
+                    ),
                 ],
             ],
             'https://example.com/acme/order/4E16bbL5iSw'
@@ -255,7 +259,7 @@ class OrderServiceTest extends ApiClientTestCase
         $account = new Account(
             [],
             'https://example.com/acme/acct/evOfKhNU60wg',
-            KEYS_PATH . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY
+            static::getKeysPath() . Bundle::PRIVATE_KEY
         );
         $order = new Order(
             [
@@ -268,7 +272,7 @@ class OrderServiceTest extends ApiClientTestCase
                     [
                         'type' => 'dns',
                         'value' => 'example.org',
-                    ]
+                    ],
                 ],
                 'authorizations' => [],
                 'finalize' => 'https://example.com/acme/order/TOlocE8rfgo/finalize',
@@ -318,7 +322,7 @@ class OrderServiceTest extends ApiClientTestCase
         $authorizationService = new AuthorizationService();
         $authorizationService->setConnector($connector);
 
-        $service = new OrderService($authorizationService, KEYS_PATH);
+        $service = new OrderService($authorizationService, static::getKeysPath());
         $service->setConnector($connector);
         $service->setKeyGenerator(new KeyGenerator());
 

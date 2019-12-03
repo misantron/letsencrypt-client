@@ -7,8 +7,7 @@ namespace LetsEncrypt\Certificate;
 use Spatie\Enum\Enum;
 
 /**
- * Class RevocationReason
- * @package LetsEncrypt\Certificate
+ * Class RevocationReason.
  *
  * @method static self unspecified()
  * @method static self keyCompromise()
