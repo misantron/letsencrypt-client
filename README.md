@@ -41,9 +41,12 @@ $client = new Client($accountKeysPath, $certificatesPath, false);
 * `$client->order()->create(Account $account, string $basename, array $subjects, Certificate $certificate)`
 * `$client->order()->get(string $basename, array $subjects)`
 * `$client->order()->getOrCreate(Account $account, string $basename, array $subjects, Certificate $certificate)`
-* `$client->order()->getPendingAuthorizations(Account $account, Order $order, string $type)`
-* `$client->order()->verifyPendingAuthorizations(Account $account, Order $order, string $identifier, string $type)`
+* `$client->order()->getPendingHttpAuthorizations(Account $account, Order $order)`
+* `$client->order()->getPendingDnsAuthorizations(Account $account, Order $order)`
+* `$client->order()->verifyPendingHttpAuthorizations(Account $account, Order $order, string $identifier)`
+* `$client->order()->verifyPendingDnsAuthorizations(Account $account, Order $order, string $identifier)`
 * `$client->order()->getCertificate(Account $account, Order $order, string $basename, string $csr)`
+* `$client->order()->revokeCertificate(Account $account, string $basename, RevocationReason $reason)`
 
 ## Advanced usage
 
