@@ -14,10 +14,58 @@ namespace LetsEncrypt\Entity;
 
 final class Endpoint extends Entity
 {
-    public $newNonce;
-    public $newAccount;
-    public $newOrder;
-    public $newAuthz;
-    public $revokeCert;
-    public $keyChange;
+    /**
+     * @var string
+     */
+    protected $newNonce;
+
+    /**
+     * @var string
+     */
+    protected $newAccount;
+
+    /**
+     * @var string
+     */
+    protected $newOrder;
+
+    /**
+     * @var string
+     */
+    protected $newAuthz;
+
+    /**
+     * @var string
+     */
+    protected $revokeCert;
+
+    /**
+     * @var string
+     */
+    protected $keyChange;
+
+    public function getNewNonceUrl(): string
+    {
+        return $this->newNonce;
+    }
+
+    public function getNewAccountUrl(): string
+    {
+        return $this->newAccount;
+    }
+
+    public function getNewOrderUrl(): string
+    {
+        return $this->newOrder;
+    }
+
+    public function getRevokeCertificateUrl(): string
+    {
+        return $this->revokeCert;
+    }
+
+    public function getKeyChangeUrl(): string
+    {
+        return $this->keyChange;
+    }
 }

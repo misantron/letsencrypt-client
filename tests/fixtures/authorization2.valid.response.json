@@ -1,0 +1,20 @@
+{
+  "status": "valid",
+  "expires": "2016-01-02T14:09:30Z",
+  "identifier": {
+    "type": "dns",
+    "value": "*.example.org"
+  },
+  "challenges": [
+    {
+      "type": "http-01",
+      "url": "https://example.com/acme/chall/prV_B7yEyA4",
+      "token": "DGyRejmCefe7v4NfDGDKfA"
+    },
+    {
+      "type": "dns-01",
+      "url": "https://example.com/acme/chall/Rg5dV14Gh1Q",
+      "token": "DGyRejmCefe7v4NfDGDKfA"
+    }
+  ]
+}

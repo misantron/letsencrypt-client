@@ -87,19 +87,24 @@ final class Connector
         return $this->signer;
     }
 
-    public function getNewAccountEndpoint(): string
+    public function getNewAccountUrl(): string
     {
-        return $this->endpoint->newAccount;
+        return $this->endpoint->getNewAccountUrl();
     }
 
-    public function getNewOrderEndpoint(): string
+    public function getNewOrderUrl(): string
     {
-        return $this->endpoint->newOrder;
+        return $this->endpoint->getNewOrderUrl();
     }
 
-    public function getRevokeCertificateEndpoint(): string
+    public function getRevokeCertificateUrl(): string
     {
-        return $this->endpoint->revokeCert;
+        return $this->endpoint->getRevokeCertificateUrl();
+    }
+
+    public function getAccountKeyChangeUrl(): string
+    {
+        return $this->endpoint->getKeyChangeUrl();
     }
 
     public function signedJWSRequest(string $url, array $payload, string $privateKeyPath): Response
@@ -130,7 +135,7 @@ final class Connector
 
     private function getNonce(): void
     {
-        $this->request('HEAD', $this->endpoint->newNonce);
+        $this->request('HEAD', $this->endpoint->getNewNonceUrl());
     }
 
     private function request(string $method, string $uri, array $data = null): Response

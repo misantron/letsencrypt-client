@@ -14,6 +14,7 @@ namespace LetsEncrypt\Tests;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -102,6 +103,23 @@ abstract class ApiClientTestCase extends TestCase
                 return $response;
             }
         );
+    }
+
+    protected function appendExceptionResponse(
+        string $className,
+        string $fileName,
+        int $status,
+        array $headers = ['Content-Type' => 'application/problem+json']
+    ): void {
+        $request = $this->createMock(RequestInterface::class);
+
+        $content = file_get_contents(__DIR__ . '/fixtures/' . $fileName);
+        $response = new Response($status, $headers, $content);
+
+        /** @var TransferException $ex */
+        $ex = new $className('Invalid', $request, $response);
+
+        $this->mockHandler->append($ex);
     }
 
     protected function createConnector(): Connector

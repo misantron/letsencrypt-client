@@ -58,7 +58,8 @@ class OrderService
     {
         $certificateBasePath = $this->getCertificateBasePath($basename);
 
-        if (!mkdir($certificateBasePath, 0755)) {
+        // try to create certificate directory if it's not exist
+        if (!is_dir($certificateBasePath) && !mkdir($certificateBasePath, 0755)) {
             throw new EnvironmentException('Unable to create certificate directory "' . $certificateBasePath . '"');
         }
 
@@ -81,7 +82,7 @@ class OrderService
         try {
             $response = $this->connector->signedKIDRequest(
                 $account->getUrl(),
-                $this->connector->getNewOrderEndpoint(),
+                $this->connector->getNewOrderUrl(),
                 $payload,
                 $account->getPrivateKeyPath()
             );
@@ -195,6 +196,10 @@ class OrderService
      */
     public function getCertificate(Account $account, Order $order, string $basename): void
     {
+        if (!$order->allAuthorizationsValid()) {
+            throw new OrderException('Order authorizations are not valid');
+        }
+
         if ($order->isPending() || $order->isReady()) {
             $order = $this->finalize($account, $order, $basename);
         }
@@ -259,7 +264,7 @@ class OrderService
         ];
 
         $response = $this->connector->signedKIDRequest(
-            $this->connector->getRevokeCertificateEndpoint(),
+            $this->connector->getRevokeCertificateUrl(),
             $account->getUrl(),
             $payload,
             $certificatePrivateKeyPath

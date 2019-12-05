@@ -12,13 +12,16 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Tests\Unit\Service;
 
+use GuzzleHttp\Exception\ClientException;
 use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Certificate\Certificate;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Authorization;
 use LetsEncrypt\Entity\Order;
+use LetsEncrypt\Enum\ECKeyAlgorithm;
 use LetsEncrypt\Enum\RSAKeyLength;
 use LetsEncrypt\Exception\EnvironmentException;
+use LetsEncrypt\Helper\FileSystem;
 use LetsEncrypt\Helper\KeyGenerator;
 use LetsEncrypt\Http\Connector;
 use LetsEncrypt\Service\AuthorizationService;
@@ -43,10 +46,19 @@ class OrderServiceTest extends ApiClientTestCase
     {
         parent::tearDownAfterClass();
 
-        // cleanup certificate directory
-        $certificateDirectoryPath = static::getKeysPath() . 'example.org' . DIRECTORY_SEPARATOR;
-        $filesList = scandir($certificateDirectoryPath);
-        if ($filesList !== false) {
+        // test domains list
+        $domains = ['example.org', 'example.net'];
+
+        foreach ($domains as $domain) {
+            // cleanup certificate directory
+            $certificateDirectoryPath = static::getKeysPath() . $domain . DIRECTORY_SEPARATOR;
+            if (!is_dir($certificateDirectoryPath)) {
+                continue;
+            }
+            $filesList = scandir($certificateDirectoryPath);
+            if ($filesList === false) {
+                continue;
+            }
             // remove all files from directory
             array_walk($filesList, static function (string $file) use ($certificateDirectoryPath) {
                 if (is_file($certificateDirectoryPath . $file)) {
@@ -56,6 +68,7 @@ class OrderServiceTest extends ApiClientTestCase
             // finally remove empty directory
             rmdir($certificateDirectoryPath);
         }
+
         // remove account key pair
         if (file_exists(static::getKeysPath() . Bundle::PRIVATE_KEY)) {
             unlink(static::getKeysPath() . Bundle::PRIVATE_KEY);
@@ -102,7 +115,7 @@ class OrderServiceTest extends ApiClientTestCase
         $connector = $this->createConnector();
 
         $this->appendResponseFixture(
-            'order.create.response.json',
+            'order.create.org.response.json',
             201,
             [
                 'Replay-Nonce' => 'MYAuvOpaoIiywTezizk5vw',
@@ -124,9 +137,8 @@ class OrderServiceTest extends ApiClientTestCase
                 'notAfter' => '',
             ]
         );
-
-        $this->appendResponseFixture('authorization1.response.json');
-        $this->appendResponseFixture('authorization2.response.json');
+        $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture('authorization2.pending.response.json');
 
         $service = $this->createService($connector);
         $order = $service->create($account, $domain, $subjects, $certificate);
@@ -141,6 +153,77 @@ class OrderServiceTest extends ApiClientTestCase
         $this->assertSame($order->getUrl(), file_get_contents($service->getOrderFilePath($domain)));
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo/finalize', $order->getFinalizeUrl());
         $this->assertSame(['www.example.org', 'example.org'], $order->getIdentifiers());
+        $this->assertCount(2, $order->getAuthorizations());
+    }
+
+    public function testGetOrCreate(): void
+    {
+        $domain = 'example.net';
+
+        // create domain directory and store order file
+        mkdir(static::getKeysPath() . $domain);
+        FileSystem::writeFileContent(
+            static::getKeysPath() . $domain . DIRECTORY_SEPARATOR . Bundle::ORDER,
+            'https://example.com/acme/order/4E16bbL5iSw'
+        );
+
+        $subjects = [
+            'www.example.net',
+            'example.net',
+        ];
+        $account = new Account(
+            [],
+            'https://example.com/acme/acct/evOfKhNU60wg',
+            static::getKeysPath() . Bundle::PRIVATE_KEY
+        );
+        $certificate = Certificate::createWithECKey(ECKeyAlgorithm::prime256v1());
+
+        $connector = $this->createConnector();
+
+        $this->appendExceptionResponse(
+            ClientException::class,
+            'order.notfound.response.json',
+            404
+        );
+        $this->appendResponseFixture(
+            'order.create.net.response.json',
+            201,
+            [
+                'Replay-Nonce' => 'MYAuvOpaoIiywTezizk5vw',
+                'Link' => '<https://example.com/acme/directory>;rel="index"',
+                'Location' => 'https://example.com/acme/order/TOlocE8rfgo',
+            ],
+            [
+                'identifiers' => [
+                    [
+                        'type' => 'dns',
+                        'value' => 'www.example.net',
+                    ],
+                    [
+                        'type' => 'dns',
+                        'value' => 'example.net',
+                    ],
+                ],
+                'notBefore' => '',
+                'notAfter' => '',
+            ]
+        );
+        $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture('authorization2.pending.response.json');
+
+        $service = $this->createService($connector);
+        $order = $service->getOrCreate($account, $domain, $subjects, $certificate);
+
+        $this->assertDirectoryExists(static::getKeysPath() . $domain);
+        $this->assertFileExists($service->getOrderFilePath($domain));
+        $this->assertFileExists($service->getPrivateKeyPath($domain));
+        $this->assertFileExists($service->getPublicKeyPath($domain));
+
+        $this->assertTrue($order->isPending());
+        $this->assertSame('https://example.com/acme/order/TOlocE8rfgo', $order->getUrl());
+        $this->assertSame($order->getUrl(), file_get_contents($service->getOrderFilePath($domain)));
+        $this->assertSame('https://example.com/acme/order/TOlocE8rfgo/finalize', $order->getFinalizeUrl());
+        $this->assertSame(['www.example.net', 'example.net'], $order->getIdentifiers());
         $this->assertCount(2, $order->getAuthorizations());
     }
 
@@ -243,9 +326,9 @@ class OrderServiceTest extends ApiClientTestCase
 
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('order.create.response.json');
-        $this->appendResponseFixture('authorization1.response.json');
-        $this->appendResponseFixture('authorization2.response.json');
+        $this->appendResponseFixture('order.create.org.response.json');
+        $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture('authorization2.pending.response.json');
 
         $service = $this->createService($connector);
         $order = $service->get($domain, $subjects);
@@ -282,7 +365,16 @@ class OrderServiceTest extends ApiClientTestCase
                         'value' => 'example.org',
                     ],
                 ],
-                'authorizations' => [],
+                'authorizations' => [
+                    new Authorization([
+                        'status' => 'valid',
+                        'challenges' => [],
+                    ], 'https://example.com/acme/authz/PAniVnsZcis'),
+                    new Authorization([
+                        'status' => 'valid',
+                        'challenges' => [],
+                    ], 'https://example.com/acme/authz/r4HqLzrSrpI'),
+                ],
                 'finalize' => 'https://example.com/acme/order/TOlocE8rfgo/finalize',
             ],
             'https://example.com/acme/order/4E16bbL5iSw'
@@ -296,23 +388,23 @@ class OrderServiceTest extends ApiClientTestCase
             'Link' => '<https://example.com/acme/directory>;rel="index"',
             'Location' => 'https://example.com/acme/order/4E16bbL5iSw',
         ]);
-        $this->appendResponseFixture('authorization1.response.json');
-        $this->appendResponseFixture('authorization2.response.json');
+        $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture('authorization2.valid.response.json');
 
         // 1st try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
-        $this->appendResponseFixture('authorization1.response.json');
-        $this->appendResponseFixture('authorization2.response.json');
+        $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture('authorization2.valid.response.json');
 
         // 2nd try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
-        $this->appendResponseFixture('authorization1.response.json');
-        $this->appendResponseFixture('authorization2.response.json');
+        $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture('authorization2.valid.response.json');
 
         // 3rd try: order is valid
         $this->appendResponseFixture('order.valid.response.json');
-        $this->appendResponseFixture('authorization1.response.json');
-        $this->appendResponseFixture('authorization2.response.json');
+        $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture('authorization2.valid.response.json');
 
         // get certificate
         $this->appendResponseFixture('certificate.response');

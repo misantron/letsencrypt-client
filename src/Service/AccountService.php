@@ -95,7 +95,7 @@ class AccountService
         ];
 
         $response = $this->connector->signedJWSRequest(
-            $this->connector->getNewAccountEndpoint(),
+            $this->connector->getNewAccountUrl(),
             $payload,
             $this->getPrivateKeyPath()
         );
@@ -110,7 +110,7 @@ class AccountService
         ];
 
         $response = $this->connector->signedJWSRequest(
-            $this->connector->getNewAccountEndpoint(),
+            $this->connector->getNewAccountUrl(),
             $payload,
             $this->getPrivateKeyPath()
         );

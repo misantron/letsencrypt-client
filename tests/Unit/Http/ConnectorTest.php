@@ -24,8 +24,8 @@ class ConnectorTest extends ApiClientTestCase
 
         $this->assertPropertyInstanceOf(Endpoint::class, 'endpoint', $connector);
         $this->assertPropertyInstanceOf(Signer::class, 'signer', $connector);
-        $this->assertSame('https://example.com/acme/new-account', $connector->getNewAccountEndpoint());
-        $this->assertSame('https://example.com/acme/new-order', $connector->getNewOrderEndpoint());
+        $this->assertSame('https://example.com/acme/new-account', $connector->getNewAccountUrl());
+        $this->assertSame('https://example.com/acme/new-order', $connector->getNewOrderUrl());
         $this->assertPropertySame('oFvnlFP1wIhRlYS2jTaXbA', 'nonce', $connector);
     }
 }
