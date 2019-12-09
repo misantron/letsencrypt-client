@@ -63,7 +63,7 @@ final class Connector
         $this->signer = $signer ?? Signer::createWithBase64SafeEncoder();
 
         $this->getEndpoints();
-        $this->getNonce();
+        $this->getNewNonce();
     }
 
     private function createClient(bool $staging, Logger $logger = null): ClientInterface
@@ -114,6 +114,11 @@ final class Connector
         return $this->request('POST', $url, $sign);
     }
 
+    public function signedJWS(string $url, array $payload, string $privateKeyPath): array
+    {
+        return $this->signer->jws($payload, $url, $this->nonce, $privateKeyPath);
+    }
+
     public function signedKIDRequest(string $kid, string $url, array $payload, string $privateKeyPath): Response
     {
         $sign = $this->signer->kid($payload, $kid, $url, $this->nonce, $privateKeyPath);
@@ -133,7 +138,7 @@ final class Connector
         $this->endpoint = new Endpoint($response->getDecodedContent());
     }
 
-    private function getNonce(): void
+    private function getNewNonce(): void
     {
         $this->request('HEAD', $this->endpoint->getNewNonceUrl());
     }
@@ -174,7 +179,7 @@ final class Connector
         if ($response->hasHeader(self::HEADER_NONCE)) {
             $this->nonce = $response->getHeaderLine(self::HEADER_NONCE);
         } elseif ($method === 'POST') {
-            $this->getNonce();
+            $this->getNewNonce();
         }
     }
 }

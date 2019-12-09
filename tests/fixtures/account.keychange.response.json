@@ -1,0 +1,14 @@
+{
+  "key": {
+    "kty": "RSA",
+    "n": "qnuNtVj7iH4zWfXa44thoOBdy0WS_wYC3hkEMzeRzrY1einyAQqEBO-ZR8XbqYj-t0B3PON5_IHTTCkXf5IBN3eUgfMueNm4v7aiR4B8O4t5-4NFrsbCl5wTN8Lo4L7c1ZiJkojs4xVAX_yIXNmUn-P_GAgDlIFfTF59Aaqucd9D0qlYS03Yq9EpjQv-5V77Agb9TLoMs1pzoD-v8k5eGfogmLyKuMY0-Mdqjct27gBwXvHFbafu1HpiT7gUpmoo3L7BwRQTa4-nkw1WUdulgVnFelYOdDhKOMcOI6SHqa2hoQYl1joD-ObibaDtEz9pem6MeaMoZxUvssINPAqrnQ",
+    "e": "AQAB"
+  },
+  "contact": [
+    "mailto:cert-admin@example.org",
+    "mailto:admin@example.org"
+  ],
+  "initialIp": "46.231.212.68",
+  "createdAt": "2019-11-25T16:29:37.16977542Z",
+  "status": "valid"
+}

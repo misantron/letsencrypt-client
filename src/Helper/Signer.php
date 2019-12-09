@@ -46,18 +46,9 @@ final class Signer implements SignerInterface
             throw KeyPairException::privateKeyInvalid();
         }
 
-        $details = openssl_pkey_get_details($privateKey);
-        if ($details === false) {
-            throw KeyPairException::privateKeyDetailsError();
-        }
-
         $protected = [
             'alg' => 'RS256',
-            'jwk' => [
-                'kty' => 'RSA',
-                'n' => $this->base64Encoder->encode($details['rsa']['n']),
-                'e' => $this->base64Encoder->encode($details['rsa']['e']),
-            ],
+            'jwk' => $this->jwk($privateKeyPath),
             'nonce' => $nonce,
             'url' => $url,
         ];
@@ -90,6 +81,16 @@ final class Signer implements SignerInterface
      */
     public function kty(string $privateKeyPath): string
     {
+        $header = json_encode($this->jwk($privateKeyPath));
+
+        return $this->base64Encoder->hashEncode($header);
+    }
+
+    /**
+     * @throws KeyPairException
+     */
+    public function jwk(string $privateKeyPath): array
+    {
         $privateKey = openssl_pkey_get_private('file://' . $privateKeyPath);
         if ($privateKey === false) {
             throw KeyPairException::privateKeyInvalid();
@@ -100,13 +101,11 @@ final class Signer implements SignerInterface
             throw KeyPairException::privateKeyDetailsError();
         }
 
-        $header = [
+        return [
             'kty' => 'RSA',
             'n' => $this->base64Encoder->encode($details['rsa']['n']),
             'e' => $this->base64Encoder->encode($details['rsa']['e']),
         ];
-
-        return $this->base64Encoder->hashEncode(json_encode($header));
     }
 
     private function sign(array $protected, array $payload, $privateKey): array

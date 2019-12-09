@@ -15,6 +15,7 @@ namespace LetsEncrypt\Service;
 use LetsEncrypt\Assertion\Assert;
 use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Entity\Account;
+use LetsEncrypt\Exception\AccountException;
 use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Http\ConnectorAwareTrait;
 use LetsEncrypt\Http\Response;
@@ -67,6 +68,42 @@ class AccountService
         );
 
         return $this->createAccountFromResponse($response);
+    }
+
+    public function keyRollover(): void
+    {
+        $account = $this->getAccount();
+
+        // generate new key pair
+        $this->keyGenerator->rsa($this->getTmpPrivateKeyPath(), $this->getTmpPublicKeyPath());
+
+        $payload = [
+            'account' => $account->getUrl(),
+            'oldKey' => $this->connector->getSigner()->jwk($this->getPrivateKeyPath()),
+        ];
+
+        $signedPayload = $this->connector->signedJWS(
+            $this->connector->getAccountKeyChangeUrl(),
+            $payload,
+            $this->getTmpPrivateKeyPath()
+        );
+
+        $response = $this->connector->signedKIDRequest(
+            $account->getUrl(),
+            $this->connector->getAccountKeyChangeUrl(),
+            $signedPayload,
+            $this->getPrivateKeyPath()
+        );
+
+        if (!$response->isStatusOk()) {
+            throw new AccountException('Account key rollover failed');
+        }
+
+        unlink($this->getPrivateKeyPath());
+        unlink($this->getPublicKeyPath());
+
+        rename($this->getTmpPrivateKeyPath(), $this->getPrivateKeyPath());
+        rename($this->getTmpPublicKeyPath(), $this->getPublicKeyPath());
     }
 
     public function deactivate(): Account
@@ -139,8 +176,18 @@ class AccountService
         return $this->keysPath . DIRECTORY_SEPARATOR . Bundle::PRIVATE_KEY;
     }
 
+    private function getTmpPrivateKeyPath(): string
+    {
+        return $this->getPrivateKeyPath() . '.new';
+    }
+
     private function getPublicKeyPath(): string
     {
         return $this->keysPath . DIRECTORY_SEPARATOR . Bundle::PUBLIC_KEY;
+    }
+
+    private function getTmpPublicKeyPath(): string
+    {
+        return $this->getPublicKeyPath() . '.new';
     }
 }

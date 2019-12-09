@@ -80,7 +80,8 @@ class AccountServiceTest extends ApiClientTestCase
             ]
         );
 
-        $account = $this->createService($connector)->create($emails);
+        $service = $this->createService($connector);
+        $account = $service->create($emails);
 
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
@@ -114,7 +115,8 @@ class AccountServiceTest extends ApiClientTestCase
             ]
         );
 
-        $account = $this->createService($connector)->get();
+        $service = $this->createService($connector);
+        $account = $service->get();
 
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
@@ -143,7 +145,7 @@ class AccountServiceTest extends ApiClientTestCase
             200,
             [
                 'Content-Type' => 'application/json',
-                'Replay-Nonce' => 'D8s4D2mLs8Vn-goWuPQeKA',
+                'Replay-Nonce' => 'S9XaOcxP5McpnTcWPIhYuB',
                 'Link' => '<https://example.com/acme/directory>;rel="index"',
                 'Location' => 'https://example.com/acme/acct/evOfKhNU60wg',
             ],
@@ -168,7 +170,8 @@ class AccountServiceTest extends ApiClientTestCase
             ]
         );
 
-        $account = $this->createService($connector)->update($emails);
+        $service = $this->createService($connector);
+        $account = $service->update($emails);
 
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
@@ -182,6 +185,49 @@ class AccountServiceTest extends ApiClientTestCase
 
     /**
      * @depends testUpdate
+     */
+    public function testKeyRollover(): void
+    {
+        $privateKeyContent = file_get_contents(static::getKeysPath() . Bundle::PRIVATE_KEY);
+        $publicKeyContent = file_get_contents(static::getKeysPath() . Bundle::PUBLIC_KEY);
+
+        $connector = $this->createConnector();
+
+        $this->appendResponseFixture(
+            'account.get.response.json',
+            200,
+            [
+                'Content-Type' => 'application/json',
+                'Replay-Nonce' => 'S9XaOcxP5McpnTcWPIhYuB',
+                'Link' => '<https://example.com/acme/directory>;rel="index"',
+                'Location' => 'https://example.com/acme/acct/evOfKhNU60wg',
+            ],
+            [
+                'onlyReturnExisting' => true,
+            ]
+        );
+
+        $this->appendResponseFixture(
+            'account.keychange.response.json',
+            200,
+            [
+                'Content-Type' => 'application/json',
+                'Replay-Nonce' => 'D8s4D2mLs8Vn-goWuPQeKA',
+                'Link' => '<https://example.com/acme/directory>;rel="index"',
+                'Location' => 'https://example.com/acme/acct/evOfKhNU60wg',
+            ]
+        );
+
+        $service = $this->createService($connector);
+        $service->keyRollover();
+
+        // assert that key pair were changed
+        $this->assertNotSame($privateKeyContent, file_get_contents(static::getKeysPath() . Bundle::PRIVATE_KEY));
+        $this->assertNotSame($publicKeyContent, file_get_contents(static::getKeysPath() . Bundle::PUBLIC_KEY));
+    }
+
+    /**
+     * @depends testKeyRollover
      */
     public function testDeactivate(): void
     {
@@ -215,7 +261,8 @@ class AccountServiceTest extends ApiClientTestCase
             ]
         );
 
-        $account = $this->createService($connector)->deactivate();
+        $service = $this->createService($connector);
+        $account = $service->deactivate();
 
         $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
         $this->assertSame([
