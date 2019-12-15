@@ -12,10 +12,11 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Logger;
 
-use function GuzzleHttp\Promise\rejection_for;
+use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LogLevel;
+use function GuzzleHttp\Promise\rejection_for;
 
 final class LogMiddleware
 {
@@ -67,19 +68,30 @@ final class LogMiddleware
     {
         return function (\Exception $reason) use ($request) {
             if ($this->logger->logErrorsOnly() || $this->logger->debugMode()) {
-                $level = $this->logger->getLogLevel($reason->getResponse());
-                $context = [
-                    'method' => $request->getMethod(),
-                    'url' => (string) $request->getUri(),
-                ];
-                if ($reason->hasResponse()) {
+                if ($reason instanceof RequestException && $reason->hasResponse()) {
                     /** @var ResponseInterface $response */
                     $response = $reason->getResponse();
-                    $context['status'] = $response->getStatusCode();
-                    $context['headers'] = json_encode($response->getHeaders(), JSON_PRETTY_PRINT);
-                    $context['body'] = $response->getBody()->getContents();
+                    $context = [
+                        'method' => $request->getMethod(),
+                        'url' => (string) $request->getUri(),
+                        'status' => $response->getStatusCode(),
+                        'headers' => json_encode($response->getHeaders(), JSON_PRETTY_PRINT),
+                        'body' => $response->getBody()->getContents(),
+                    ];
+                    $level = $this->logger->getLogLevel($response);
+                    $this->logger->log($level, 'failed request', $context);
+                } else {
+                    $context = [
+                        'method' => $request->getMethod(),
+                        'url' => (string) $request->getUri(),
+                        'reason' => [
+                            'code' => $reason->getCode(),
+                            'message' => $reason->getMessage(),
+                            'trace' => $reason->getTrace(),
+                        ],
+                    ];
+                    $this->logger->log(LogLevel::CRITICAL, 'invalid request', $context);
                 }
-                $this->logger->log($level, 'failed request', $context);
             }
 
             return rejection_for($reason);

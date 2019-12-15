@@ -58,13 +58,8 @@ final class Logger
         return $this->strategy->isEqual('debugMode');
     }
 
-    public function getLogLevel(ResponseInterface $response = null): string
+    public function getLogLevel(ResponseInterface $response): string
     {
-        if ($response === null) {
-            return LogLevel::CRITICAL;
-        }
-        $statusCode = $response->getStatusCode();
-
-        return $statusCode < 400 ? LogLevel::INFO : LogLevel::ERROR;
+        return $response->getStatusCode() < 400 ? LogLevel::INFO : LogLevel::ERROR;
     }
 }

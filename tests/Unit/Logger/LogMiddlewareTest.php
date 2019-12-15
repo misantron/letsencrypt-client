@@ -144,6 +144,7 @@ class LogMiddlewareTest extends TestCase
         $this->assertSame(LogLevel::CRITICAL, $this->logger->records[1]['level']);
         $this->assertSame('GET', $this->logger->records[1]['context']['method']);
         $this->assertSame('/bar', $this->logger->records[1]['context']['url']);
+        $this->assertArrayHasKey('reason', $this->logger->records[1]['context']);
         $this->assertArrayNotHasKey('status', $this->logger->records[1]['context']);
         $this->assertArrayNotHasKey('body', $this->logger->records[1]['context']);
     }
