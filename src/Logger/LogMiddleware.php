@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace LetsEncrypt\Logger;
 
 use GuzzleHttp\Exception\RequestException;
+use function GuzzleHttp\Promise\rejection_for;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LogLevel;
-use function GuzzleHttp\Promise\rejection_for;
 
 final class LogMiddleware
 {

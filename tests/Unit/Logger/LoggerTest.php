@@ -67,8 +67,6 @@ class LoggerTest extends TestCase
     {
         $logger = new Logger(new TestLogger());
 
-        $this->assertSame(LogLevel::CRITICAL, $logger->getLogLevel());
-
         $response = $this->createMock(ResponseInterface::class);
         $response
             ->expects($this->once())
