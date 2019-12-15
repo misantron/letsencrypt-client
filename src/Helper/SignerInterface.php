@@ -14,6 +14,8 @@ namespace LetsEncrypt\Helper;
 
 interface SignerInterface
 {
+    public function getBase64Encoder(): Base64SafeEncoder;
+
     public function jws(array $payload, string $url, string $nonce, string $privateKeyPath): array;
 
     public function kid(array $payload, string $kid, string $url, string $nonce, string $privateKeyPath): array;

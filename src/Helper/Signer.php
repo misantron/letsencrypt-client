@@ -113,7 +113,7 @@ final class Signer implements SignerInterface
         $payloadEncoded = $this->base64Encoder->encode(str_replace('\\/', '/', json_encode($payload)));
         $protectedEncoded = $this->base64Encoder->encode(json_encode($protected));
 
-        openssl_sign($protectedEncoded . '.' . $payloadEncoded, $signature, $privateKey, 'SHA256');
+        openssl_sign($protectedEncoded . '.' . $payloadEncoded, $signature, $privateKey, OPENSSL_ALGO_SHA256);
 
         return [
             'protected' => $protectedEncoded,

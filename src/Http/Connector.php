@@ -82,7 +82,7 @@ final class Connector
         ]);
     }
 
-    public function getSigner(): Signer
+    public function getSigner(): SignerInterface
     {
         return $this->signer;
     }
