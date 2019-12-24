@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace LetsEncrypt\Tests\Unit\Service;
 
 use LetsEncrypt\Entity\Authorization;
+use LetsEncrypt\Http\DnsCheckerInterface;
 use LetsEncrypt\Http\GooglePublicDNS;
 use LetsEncrypt\Service\AuthorizationService;
 use LetsEncrypt\Tests\ApiClientTestCase;
@@ -23,7 +24,21 @@ class AuthorizationServiceTest extends ApiClientTestCase
     {
         $service = new AuthorizationService();
 
-        $this->assertPropertyInstanceOf(GooglePublicDNS::class, 'googlePublicDNS', $service);
+        $this->assertPropertyInstanceOf(GooglePublicDNS::class, 'dnsChecker', $service);
+    }
+
+    public function testConstructorWithCustomDnsChecker(): void
+    {
+        $checker = new class() implements DnsCheckerInterface {
+            public function verify(string $domain, string $dnsDigest): bool
+            {
+                return false;
+            }
+        };
+
+        $service = new AuthorizationService($checker);
+
+        $this->assertPropertyInstanceOf(DnsCheckerInterface::class, 'dnsChecker', $service);
     }
 
     public function testGetAuthorizations(): void

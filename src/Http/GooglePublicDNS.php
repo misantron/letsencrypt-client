@@ -17,7 +17,7 @@ namespace LetsEncrypt\Http;
  *
  * @see https://developers.google.com/speed/public-dns/docs/doh/json
  */
-final class GooglePublicDNS
+final class GooglePublicDNS implements DnsCheckerInterface
 {
     use ConnectorAwareTrait;
 

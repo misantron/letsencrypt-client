@@ -15,6 +15,7 @@ namespace LetsEncrypt\Service;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Authorization;
 use LetsEncrypt\Http\ConnectorAwareTrait;
+use LetsEncrypt\Http\DnsCheckerInterface;
 use LetsEncrypt\Http\GooglePublicDNS;
 
 class AuthorizationService
@@ -22,13 +23,13 @@ class AuthorizationService
     use ConnectorAwareTrait;
 
     /**
-     * @var GooglePublicDNS
+     * @var DnsCheckerInterface
      */
-    private $googlePublicDNS;
+    private $dnsChecker;
 
-    public function __construct()
+    public function __construct(DnsCheckerInterface $dnsChecker = null)
     {
-        $this->googlePublicDNS = new GooglePublicDNS();
+        $this->dnsChecker = $dnsChecker ?? new GooglePublicDNS();
     }
 
     /**
@@ -179,7 +180,7 @@ class AuthorizationService
             ->getBase64Encoder()
             ->hashEncode($keyAuthorization);
 
-        return $this->googlePublicDNS
+        return $this->dnsChecker
             ->setConnector($this->connector)
             ->verify($domain, $dnsDigest);
     }
