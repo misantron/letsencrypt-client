@@ -15,6 +15,7 @@ namespace LetsEncrypt\Tests\Unit\Service;
 use GuzzleHttp\Exception\ClientException;
 use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Certificate\Certificate;
+use LetsEncrypt\Certificate\RevocationReason;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Authorization;
 use LetsEncrypt\Entity\Order;
@@ -415,6 +416,56 @@ class OrderServiceTest extends ApiClientTestCase
 
         $this->assertFileExists($service->getCertificatePath($domain));
         $this->assertFileExists($service->getFullChainCertificatePath($domain));
+    }
+
+    /**
+     * @depends testGetCertificate
+     */
+    public function testRevokeCertificate(): void
+    {
+        $domain = 'example.org';
+
+        $account = new Account(
+            [],
+            'https://example.com/acme/acct/evOfKhNU60wg',
+            static::getKeysPath() . Bundle::PRIVATE_KEY
+        );
+
+        $connector = $this->createConnector();
+
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'lXfyFzi6238tfPQRwgfmPU']);
+
+        $service = $this->createService($connector);
+        $result = $service->revokeCertificate($account, $domain, RevocationReason::keyCompromise());
+
+        $this->assertTrue($result);
+    }
+
+    /**
+     * @depends testRevokeCertificate
+     */
+    public function testRevokeCertificateRetry(): void
+    {
+        $domain = 'example.org';
+
+        $account = new Account(
+            [],
+            'https://example.com/acme/acct/evOfKhNU60wg',
+            static::getKeysPath() . Bundle::PRIVATE_KEY
+        );
+
+        $connector = $this->createConnector();
+
+        $this->appendResponseFixture(
+            'certificate.already.revoked.response.json',
+            400,
+            ['Replay-Nonce' => 'lXfyFzi6238tfPQRwgfmPU']
+        );
+
+        $service = $this->createService($connector);
+        $result = $service->revokeCertificate($account, $domain);
+
+        $this->assertFalse($result);
     }
 
     private function createService(Connector $connector): OrderService
