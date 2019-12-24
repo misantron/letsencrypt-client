@@ -15,6 +15,7 @@ namespace LetsEncrypt\Certificate;
 use LetsEncrypt\Enum\ECKeyAlgorithm;
 use LetsEncrypt\Enum\KeyType;
 use LetsEncrypt\Enum\RSAKeyLength;
+use LetsEncrypt\Helper\KeyGenerator;
 
 final class Key
 {
@@ -52,24 +53,21 @@ final class Key
         return $key->setAlgorithm($algorithm);
     }
 
-    public function isRSA(): bool
+    public function generate(KeyGenerator $keyGenerator, string $privateKeyPath, string $publicKeyPath): void
     {
-        return $this->type->isEqual('rsa');
-    }
-
-    public function isEC(): bool
-    {
-        return $this->type->isEqual('ec');
-    }
-
-    public function getLength(): ?RSAKeyLength
-    {
-        return $this->length;
-    }
-
-    public function getAlgorithm(): ?ECKeyAlgorithm
-    {
-        return $this->algorithm;
+        if ($this->type->isEqual('rsa')) {
+            $keyGenerator->rsa(
+                $privateKeyPath,
+                $publicKeyPath,
+                $this->length
+            );
+        } elseif ($this->type->isEqual('ec')) {
+            $keyGenerator->ec(
+                $privateKeyPath,
+                $publicKeyPath,
+                $this->algorithm
+            );
+        }
     }
 
     private function setLength(RSAKeyLength $length): self

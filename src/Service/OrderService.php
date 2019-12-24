@@ -51,20 +51,11 @@ class OrderService
     }
 
     /**
-     * @throws EnvironmentException
      * @throws OrderException
      */
     public function create(Account $account, string $basename, array $subjects, Certificate $certificate): Order
     {
-        $certificateBasePath = $this->getCertificateBasePath($basename);
-
-        // try to create certificate directory if it's not exist
-        if (!is_dir($certificateBasePath) && !mkdir($certificateBasePath, 0755)) {
-            throw new EnvironmentException('Unable to create certificate directory "' . $certificateBasePath . '"');
-        }
-
-        Assert::directory($certificateBasePath, 'Certificate directory path %s is not a directory');
-        Assert::writable($certificateBasePath, 'Certificates directory path %s is not writable');
+        $this->processOrderBasePath($basename);
 
         $identifiers = array_map(static function (string $subject) {
             return [
@@ -102,19 +93,11 @@ class OrderService
             throw new OrderException('Unable to store order file');
         }
 
-        if ($certificate->getKey()->isRSA()) {
-            $this->keyGenerator->rsa(
-                $this->getPrivateKeyPath($basename),
-                $this->getPublicKeyPath($basename),
-                $certificate->getKey()->getLength()
-            );
-        } elseif ($certificate->getKey()->isEC()) {
-            $this->keyGenerator->ec(
-                $this->getPrivateKeyPath($basename),
-                $this->getPublicKeyPath($basename),
-                $certificate->getKey()->getAlgorithm()
-            );
-        }
+        $certificate->generate(
+            $this->keyGenerator,
+            $this->getPrivateKeyPath($basename),
+            $this->getPublicKeyPath($basename)
+        );
 
         return $this->createOrderFromResponse($response, $orderUrl);
     }
@@ -221,20 +204,7 @@ class OrderService
             $account->getPrivateKeyPath()
         );
 
-        $certificates = $this->extractCertificates($response->getRawContent());
-
-        if (isset($certificates[Bundle::CERTIFICATE])) {
-            FileSystem::writeFileContent(
-                $this->getCertificatePath($basename),
-                $certificates[Bundle::CERTIFICATE]
-            );
-        }
-        if (isset($certificates[Bundle::FULL_CHAIN_CERTIFICATE])) {
-            FileSystem::writeFileContent(
-                $this->getFullChainCertificatePath($basename),
-                $certificates[Bundle::FULL_CHAIN_CERTIFICATE]
-            );
-        }
+        $this->extractAndStoreCertificates($basename, $response->getRawContent());
     }
 
     public function revokeCertificate(Account $account, string $basename, RevocationReason $reason = null): bool
@@ -273,14 +243,17 @@ class OrderService
         return $response->isStatusOk();
     }
 
-    private function extractCertificates(string $content): array
+    private function extractAndStoreCertificates(string $basename, string $content): void
     {
         $pattern = '~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i';
 
-        $files = [];
-
         if (preg_match_all($pattern, $content, $matches) !== false) {
-            $files[Bundle::CERTIFICATE] = $matches[0][0];
+            $certificateContent = $matches[0][0];
+
+            FileSystem::writeFileContent(
+                $this->getCertificatePath($basename),
+                $certificateContent
+            );
 
             $partsCount = count($matches[0]);
 
@@ -290,11 +263,12 @@ class OrderService
                     $fullChainContent .= PHP_EOL . $matches[0][$i];
                 }
 
-                $files[Bundle::FULL_CHAIN_CERTIFICATE] = $fullChainContent;
+                FileSystem::writeFileContent(
+                    $this->getFullChainCertificatePath($basename),
+                    $fullChainContent
+                );
             }
         }
-
-        return $files;
     }
 
     private function finalize(Account $account, Order $order, string $basename): Order
@@ -329,6 +303,22 @@ class OrderService
         $data['authorizations'] = $this->authorizationService->getAuthorizations($data['authorizations']);
 
         return new Order($data, $url);
+    }
+
+    /**
+     * @throws EnvironmentException
+     */
+    private function processOrderBasePath(string $basename): void
+    {
+        $basePath = $this->getCertificateBasePath($basename);
+
+        // try to create certificate directory if it's not exist
+        if (!is_dir($basePath) && !mkdir($basePath, 0755)) {
+            throw new EnvironmentException('Unable to create certificate directory "' . $basePath . '"');
+        }
+
+        Assert::directory($basePath, 'Certificate directory path %s is not a directory');
+        Assert::writable($basePath, 'Certificates directory path %s is not writable');
     }
 
     private function cleanupFiles(string $basename): void

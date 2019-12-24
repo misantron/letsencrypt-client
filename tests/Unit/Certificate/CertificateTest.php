@@ -25,7 +25,6 @@ class CertificateTest extends TestCase
         $certificate = Certificate::createWithRSAKey(RSAKeyLength::bit2048());
 
         $this->assertPropertyInstanceOf(Key::class, 'key', $certificate);
-        $this->assertInstanceOf(RSAKeyLength::class, $certificate->getKey()->getLength());
         $this->assertSame('', $certificate->getNotBefore());
         $this->assertSame('', $certificate->getNotAfter());
 
@@ -35,7 +34,6 @@ class CertificateTest extends TestCase
         $certificate = Certificate::createWithRSAKey(RSAKeyLength::bit2048(), $notBefore, $notAfter);
 
         $this->assertPropertyInstanceOf(Key::class, 'key', $certificate);
-        $this->assertInstanceOf(RSAKeyLength::class, $certificate->getKey()->getLength());
         $this->assertSame('2016-01-01T00:00:00+00:00', $certificate->getNotBefore());
         $this->assertSame('2016-01-08T00:00:00+00:00', $certificate->getNotAfter());
     }
@@ -45,7 +43,6 @@ class CertificateTest extends TestCase
         $certificate = Certificate::createWithECKey(ECKeyAlgorithm::secp384r1());
 
         $this->assertPropertyInstanceOf(Key::class, 'key', $certificate);
-        $this->assertInstanceOf(ECKeyAlgorithm::class, $certificate->getKey()->getAlgorithm());
         $this->assertSame('', $certificate->getNotBefore());
         $this->assertSame('', $certificate->getNotAfter());
 
@@ -55,7 +52,6 @@ class CertificateTest extends TestCase
         $certificate = Certificate::createWithECKey(ECKeyAlgorithm::secp384r1(), $notBefore, $notAfter);
 
         $this->assertPropertyInstanceOf(Key::class, 'key', $certificate);
-        $this->assertInstanceOf(ECKeyAlgorithm::class, $certificate->getKey()->getAlgorithm());
         $this->assertSame('2016-01-01T00:00:00+00:00', $certificate->getNotBefore());
         $this->assertSame('2016-01-08T00:00:00+00:00', $certificate->getNotAfter());
     }

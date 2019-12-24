@@ -14,6 +14,7 @@ namespace LetsEncrypt\Certificate;
 
 use LetsEncrypt\Enum\ECKeyAlgorithm;
 use LetsEncrypt\Enum\RSAKeyLength;
+use LetsEncrypt\Helper\KeyGenerator;
 
 final class Certificate
 {
@@ -65,8 +66,8 @@ final class Certificate
         return $this->notAfter !== null ? $this->notAfter->format(DATE_RFC3339) : '';
     }
 
-    public function getKey(): Key
+    public function generate(KeyGenerator $keyGenerator, string $privateKeyPath, string $publicKeyPath): void
     {
-        return $this->key;
+        $this->key->generate($keyGenerator, $privateKeyPath, $publicKeyPath);
     }
 }
