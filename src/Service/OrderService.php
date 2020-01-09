@@ -222,7 +222,9 @@ class OrderService
 
         $certificateContent = FileSystem::readFileContent($certificatePath);
 
-        preg_match('~-----BEGIN\sCERTIFICATE-----(.*)-----END\sCERTIFICATE-----~s', $certificateContent, $matches);
+        $pattern = '~-----BEGIN\sCERTIFICATE-----(.*)-----END\sCERTIFICATE-----~s';
+
+        preg_match($pattern, $certificateContent, $matches);
         $encodedCertificate = $this->connector
             ->getSigner()
             ->getBase64Encoder()

@@ -22,8 +22,10 @@ use LetsEncrypt\Entity\Order;
 use LetsEncrypt\Enum\ECKeyAlgorithm;
 use LetsEncrypt\Enum\RSAKeyLength;
 use LetsEncrypt\Exception\EnvironmentException;
+use LetsEncrypt\Helper\Base64SafeEncoder;
 use LetsEncrypt\Helper\FileSystem;
 use LetsEncrypt\Helper\KeyGenerator;
+use LetsEncrypt\Helper\Signer;
 use LetsEncrypt\Http\Connector;
 use LetsEncrypt\Http\DnsCheckerInterface;
 use LetsEncrypt\Service\AuthorizationService;
@@ -343,6 +345,98 @@ class OrderServiceTest extends ApiClientTestCase
         $this->assertCount(2, $order->getAuthorizations());
     }
 
+    public function testVerifyPendingHttpAuthorization(): void
+    {
+        $identifier = 'example.org';
+
+        $token = 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA';
+        $digest = 'CjpcsYdnOxQd1jMkqWOWzcGTumF_k-erQCFFiYqofcM';
+
+        $account = new Account(
+            [],
+            'https://example.com/acme/acct/evOfKhNU60wg',
+            static::getKeysPath() . Bundle::PRIVATE_KEY
+        );
+        $order = new Order(
+            [
+                'identifiers' => [
+                    [
+                        'type' => 'dns',
+                        'value' => 'www.example.org',
+                    ],
+                    [
+                        'type' => 'dns',
+                        'value' => 'example.org',
+                    ],
+                ],
+                'authorizations' => [
+                    new Authorization(
+                        [
+                            'status' => 'pending',
+                            'identifier' => [
+                                'value' => 'example.org',
+                            ],
+                            'challenges' => [
+                                [
+                                    'type' => 'http-01',
+                                    'status' => 'pending',
+                                    'url' => 'https://example.com/acme/chall/Rg5dV14Gh1Q',
+                                    'token' => $token,
+                                ],
+                            ],
+                        ],
+                        'https://example.com/acme/authz/PAniVnsZcis'
+                    ),
+                ],
+            ],
+            'https://example.com/acme/order/4E16bbL5iSw'
+        );
+
+        $signer = $this->createSignerPartialMock($account, $digest);
+        $connector = $this->createConnector($signer);
+
+        $this->appendResponseFixture(
+            'acme.http.challenge.response',
+            200,
+            [],
+            null,
+            $identifier . '/.well-known/acme-challenge/' . $token
+        );
+        $this->appendResponseFixture(
+            'challenge.http.response.json',
+            200,
+            [
+                'Replay-Nonce' => 'CGf81JWBsq8QyIgPCi9Q9X',
+            ],
+            [
+                'keyAuthorization' => $token . '.' . $digest,
+            ]
+        );
+        $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture('authorization1.valid.response.json');
+
+        $service = $this->createService($connector);
+        $result = $service->verifyPendingHttpAuthorization($account, $order, $identifier);
+
+        $this->assertTrue($result);
+    }
+
+    private function createSignerPartialMock(Account $account, string $digest)
+    {
+        /** @var MockObject|Signer $signerMock */
+        $signerMock = $this->getMockBuilder(Signer::class)
+            ->setConstructorArgs([new Base64SafeEncoder()])
+            ->onlyMethods(['kty'])
+            ->getMock();
+        $signerMock
+            ->expects($this->once())
+            ->method('kty')
+            ->with($account->getPrivateKeyPath())
+            ->willReturn($digest);
+
+        return $signerMock;
+    }
+
     public function testVerifyPendingDnsAuthorization(): void
     {
         $identifier = 'example.org';
@@ -395,26 +489,32 @@ class OrderServiceTest extends ApiClientTestCase
         $this->appendResponseFixture('authorization1.pending.response.json');
         $this->appendResponseFixture('authorization1.valid.response.json');
 
-        /** @var MockObject|DnsCheckerInterface $dnsChecker */
-        $dnsChecker = $this
-            ->getMockBuilder(DnsCheckerInterface::class)
-            ->onlyMethods(['verify'])
-            ->addMethods(['setConnector'])
-            ->getMock();
-        $dnsChecker
-            ->expects($this->once())
-            ->method('setConnector')
-            ->with($connector)
-            ->willReturnSelf();
-        $dnsChecker
-            ->expects($this->once())
-            ->method('verify')
-            ->willReturn(true);
-
+        $dnsChecker = $this->createDnsCheckerMock($connector);
         $service = $this->createService($connector, $dnsChecker);
         $result = $service->verifyPendingDnsAuthorization($account, $order, $identifier);
 
         $this->assertTrue($result);
+    }
+
+    private function createDnsCheckerMock(Connector $connector)
+    {
+        /** @var MockObject|DnsCheckerInterface $dnsCheckerMock */
+        $dnsCheckerMock = $this
+            ->getMockBuilder(DnsCheckerInterface::class)
+            ->onlyMethods(['verify'])
+            ->addMethods(['setConnector'])
+            ->getMock();
+        $dnsCheckerMock
+            ->expects($this->once())
+            ->method('setConnector')
+            ->with($connector)
+            ->willReturnSelf();
+        $dnsCheckerMock
+            ->expects($this->once())
+            ->method('verify')
+            ->willReturn(true);
+
+        return $dnsCheckerMock;
     }
 
     /**

@@ -20,6 +20,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use LetsEncrypt\Helper\Base64SafeEncoder;
+use LetsEncrypt\Helper\SignerInterface;
 use LetsEncrypt\Http\Connector;
 use Psr\Http\Message\RequestInterface;
 
@@ -89,15 +90,19 @@ abstract class ApiClientTestCase extends TestCase
         string $fileName = null,
         int $status = 200,
         array $headers = ['Content-Type' => 'application/json'],
-        array $expectedPayload = null
+        ?array $expectedPayload = null,
+        string $expectedUri = null
     ): void {
         $content = $fileName === null ? '' : file_get_contents(__DIR__ . '/fixtures/' . $fileName);
         $response = new Response($status, $headers, $content);
 
         $this->mockHandler->append(
-            function (RequestInterface $request) use ($response, $expectedPayload) {
+            function (RequestInterface $request) use ($response, $expectedPayload, $expectedUri) {
                 if ($expectedPayload !== null) {
                     $this->assertRequestPayload($request, $expectedPayload);
+                }
+                if ($expectedUri !== null) {
+                    $this->assertRequestUri($request, $expectedUri);
                 }
 
                 return $response;
@@ -122,12 +127,12 @@ abstract class ApiClientTestCase extends TestCase
         $this->mockHandler->append($ex);
     }
 
-    protected function createConnector(): Connector
+    protected function createConnector(SignerInterface $signer = null): Connector
     {
         $this->appendResponseFixture('directory.response.json');
         $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'oFvnlFP1wIhRlYS2jTaXbA']);
 
-        return new Connector(true, null, $this->getHttpClientMock());
+        return new Connector(true, null, $this->getHttpClientMock(), $signer);
     }
 
     private function assertRequestPayload(RequestInterface $request, array $expected): void
@@ -137,5 +142,10 @@ abstract class ApiClientTestCase extends TestCase
 
         $this->assertIsString($payload);
         $this->assertSame(json_encode($expected), $payload);
+    }
+
+    private function assertRequestUri(RequestInterface $request, string $expected): void
+    {
+        $this->assertSame((string) $request->getUri(), $expected);
     }
 }

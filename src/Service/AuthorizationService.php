@@ -170,7 +170,7 @@ class AuthorizationService
     {
         $response = $this->connector->get($domain . '/.well-known/acme-challenge/' . $token);
 
-        return $response->getRawContent() === $key;
+        return trim($response->getRawContent()) === $key;
     }
 
     private function verifyDnsChallenge(string $domain, string $keyAuthorization): bool

@@ -14,7 +14,7 @@ namespace LetsEncrypt\Helper;
 
 use LetsEncrypt\Exception\KeyPairException;
 
-final class Signer implements SignerInterface
+class Signer implements SignerInterface
 {
     /**
      * @var Base64SafeEncoder
