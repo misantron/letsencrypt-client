@@ -29,7 +29,7 @@ return Config::create()
         'cast_spaces' => ['space' => 'single'],
         'yoda_style' => false,
         'concat_space' => ['spacing' => 'one'],
-        'phpdoc_annotation_without_dot' => true,
+        'phpdoc_summary' => false,
         'combine_consecutive_unsets' => true,
         'date_time_immutable' => true,
         'declare_strict_types' => true,
