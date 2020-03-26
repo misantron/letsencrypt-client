@@ -6,17 +6,18 @@ declare(strict_types=1);
  * This file is part of the LetsEncrypt ACME client.
  *
  * @author    Ivanov Aleksandr <misantron@gmail.com>
- * @copyright 2019
+ * @copyright 2019-2020
  * @license   https://github.com/misantron/letsencrypt-client/blob/master/LICENSE MIT License
  */
 
 namespace LetsEncrypt\Logger;
 
 use GuzzleHttp\Exception\RequestException;
-use function GuzzleHttp\Promise\rejection_for;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LogLevel;
+
+use function GuzzleHttp\Promise\rejection_for;
 
 final class LogMiddleware
 {

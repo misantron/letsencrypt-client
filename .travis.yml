@@ -20,8 +20,8 @@ before_script:
     fi
 
 script:
-  - vendor/bin/php-cs-fixer fix --config=.php_cs.dist -v --dry-run --diff
-  - vendor/bin/phpcs -s --config-set ignore_warnings_on_exit 1
+#  - vendor/bin/php-cs-fixer fix --config=.php_cs.dist -v --dry-run --diff
+  - vendor/bin/phpcs --standard=PSR12 src tests -s -p -n --parallel=4 --colors
   - mkdir -p build/logs
   - vendor/bin/phpunit --testsuite unit $PHPUNIT_FLAGS
 
