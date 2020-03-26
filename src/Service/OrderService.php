@@ -19,6 +19,7 @@ use LetsEncrypt\Certificate\Certificate;
 use LetsEncrypt\Certificate\RevocationReason;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Order;
+use LetsEncrypt\Enum\KeyType;
 use LetsEncrypt\Exception\EnvironmentException;
 use LetsEncrypt\Exception\FileIOException;
 use LetsEncrypt\Exception\OrderException;
@@ -55,7 +56,9 @@ class OrderService
      */
     public function create(Account $account, string $basename, array $subjects, Certificate $certificate): Order
     {
-        $this->processOrderBasePath($basename);
+        $directoryName = self::getDomainDirectoryName($basename, $certificate->getKeyType()->getValue());
+
+        $this->processOrderBasePath($directoryName);
 
         $identifiers = array_map(static function (string $subject) {
             return [
@@ -78,7 +81,7 @@ class OrderService
                 $account->getPrivateKeyPath()
             );
         } catch (TransferException $e) {
-            $this->cleanupFiles($basename);
+            $this->cleanupFiles($directoryName);
             throw new OrderException('Unable to create order');
         }
 
@@ -86,7 +89,7 @@ class OrderService
 
         try {
             FileSystem::writeFileContent(
-                $this->getOrderFilePath($basename),
+                $this->getOrderFilePath($directoryName),
                 $orderUrl
             );
         } catch (FileIOException $e) {
@@ -95,8 +98,8 @@ class OrderService
 
         $certificate->generate(
             $this->keyGenerator,
-            $this->getPrivateKeyPath($basename),
-            $this->getPublicKeyPath($basename)
+            $this->getPrivateKeyPath($directoryName),
+            $this->getPublicKeyPath($directoryName)
         );
 
         return $this->createOrderFromResponse($response, $orderUrl);
@@ -105,9 +108,11 @@ class OrderService
     /**
      * @throws OrderException
      */
-    public function get(string $basename, array $subjects): Order
+    public function get(string $basename, array $subjects, KeyType $keyType): Order
     {
-        $orderFilePath = $this->getOrderFilePath($basename);
+        $directoryName = self::getDomainDirectoryName($basename, $keyType->getValue());
+
+        $orderFilePath = $this->getOrderFilePath($directoryName);
 
         Assert::fileExists($orderFilePath, 'Order file %s does not exist');
         Assert::readable($orderFilePath, 'Order file %s is not readable');
@@ -134,10 +139,12 @@ class OrderService
 
     public function getOrCreate(Account $account, string $basename, array $subjects, Certificate $certificate): Order
     {
+        $directoryName = self::getDomainDirectoryName($basename, $certificate->getKeyType()->getValue());
+
         try {
-            $order = $this->get($basename, $subjects);
+            $order = $this->get($basename, $subjects, $certificate->getKeyType());
         } catch (\Throwable $e) {
-            $this->cleanupFiles($basename);
+            $this->cleanupFiles($directoryName);
             $order = $this->create($account, $basename, $subjects, $certificate);
         }
 
@@ -177,14 +184,16 @@ class OrderService
     /**
      * @throws OrderException
      */
-    public function getCertificate(Account $account, Order $order, string $basename): void
+    public function getCertificate(Account $account, Order $order, string $basename, KeyType $keyType): void
     {
         if (!$order->allAuthorizationsValid()) {
             throw new OrderException('Order authorizations are not valid');
         }
 
+        $directoryName = self::getDomainDirectoryName($basename, $keyType->getValue());
+
         if ($order->isPending() || $order->isReady()) {
-            $order = $this->finalize($account, $order, $basename);
+            $order = $this->finalize($account, $order, $basename, $directoryName);
         }
 
         while ($order->isProcessing()) {
@@ -204,15 +213,21 @@ class OrderService
             $account->getPrivateKeyPath()
         );
 
-        $this->extractAndStoreCertificates($basename, $response->getRawContent());
+        $this->extractAndStoreCertificates($directoryName, $response->getRawContent());
     }
 
-    public function revokeCertificate(Account $account, string $basename, RevocationReason $reason = null): bool
-    {
-        $certificatePrivateKeyPath = $this->getPrivateKeyPath($basename);
+    public function revokeCertificate(
+        Account $account,
+        string $basename,
+        KeyType $keyType,
+        RevocationReason $reason = null
+    ): bool {
+        $directoryName = self::getDomainDirectoryName($basename, $keyType->getValue());
+
+        $certificatePrivateKeyPath = $this->getPrivateKeyPath($directoryName);
         Assert::fileExists($certificatePrivateKeyPath);
 
-        $certificatePath = $this->getCertificatePath($basename);
+        $certificatePath = $this->getCertificatePath($directoryName);
         Assert::fileExists($certificatePath);
         Assert::readable($certificatePath);
 
@@ -245,7 +260,7 @@ class OrderService
         return $response->isStatusOk();
     }
 
-    private function extractAndStoreCertificates(string $basename, string $content): void
+    private function extractAndStoreCertificates(string $directoryName, string $content): void
     {
         $pattern = '~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i';
 
@@ -253,7 +268,7 @@ class OrderService
             $certificateContent = $matches[0][0];
 
             FileSystem::writeFileContent(
-                $this->getCertificatePath($basename),
+                $this->getCertificatePath($directoryName),
                 $certificateContent
             );
 
@@ -266,19 +281,19 @@ class OrderService
                 }
 
                 FileSystem::writeFileContent(
-                    $this->getFullChainCertificatePath($basename),
+                    $this->getFullChainCertificatePath($directoryName),
                     $fullChainContent
                 );
             }
         }
     }
 
-    private function finalize(Account $account, Order $order, string $basename): Order
+    private function finalize(Account $account, Order $order, string $basename, string $directoryName): Order
     {
         $csr = $this->keyGenerator->csr(
             $basename,
             $order->getIdentifiers(),
-            $this->getPrivateKeyPath($basename)
+            $this->getPrivateKeyPath($directoryName)
         );
 
         $payload = [
@@ -310,9 +325,9 @@ class OrderService
     /**
      * @throws EnvironmentException
      */
-    private function processOrderBasePath(string $basename): void
+    private function processOrderBasePath(string $directoryName): void
     {
-        $basePath = $this->getCertificateBasePath($basename);
+        $basePath = $this->getCertificateBasePath($directoryName);
 
         // try to create certificate directory if it's not exist
         if (!is_dir($basePath) && !mkdir($basePath, 0755)) {
@@ -323,9 +338,10 @@ class OrderService
         Assert::writable($basePath, 'Certificates directory path %s is not writable');
     }
 
-    private function cleanupFiles(string $basename): void
+    private function cleanupFiles(string $directoryName): void
     {
-        $basePath = $this->getCertificateBasePath($basename);
+        $basePath = $this->getCertificateBasePath($directoryName);
+
         $filesList = scandir($basePath);
         if ($filesList !== false) {
             array_walk($filesList, static function (string $file) use ($basePath) {
@@ -336,33 +352,38 @@ class OrderService
         }
     }
 
-    private function getCertificateBasePath(string $basename): string
+    public static function getDomainDirectoryName(string $basename, string $type): string
     {
-        return $this->filesPath . DIRECTORY_SEPARATOR . $basename . DIRECTORY_SEPARATOR;
+        return $basename . ':' . $type;
     }
 
-    public function getOrderFilePath(string $basename): string
+    private function getCertificateBasePath(string $directoryName): string
     {
-        return $this->getCertificateBasePath($basename) . Bundle::ORDER;
+        return $this->filesPath . DIRECTORY_SEPARATOR . $directoryName . DIRECTORY_SEPARATOR;
     }
 
-    public function getPrivateKeyPath(string $basename): string
+    public function getOrderFilePath(string $directoryName): string
     {
-        return $this->getCertificateBasePath($basename) . Bundle::PRIVATE_KEY;
+        return $this->getCertificateBasePath($directoryName) . Bundle::ORDER;
     }
 
-    public function getPublicKeyPath(string $basename): string
+    public function getPrivateKeyPath(string $directoryName): string
     {
-        return $this->getCertificateBasePath($basename) . Bundle::PUBLIC_KEY;
+        return $this->getCertificateBasePath($directoryName) . Bundle::PRIVATE_KEY;
     }
 
-    public function getCertificatePath(string $basename): string
+    public function getPublicKeyPath(string $directoryName): string
     {
-        return $this->getCertificateBasePath($basename) . Bundle::CERTIFICATE;
+        return $this->getCertificateBasePath($directoryName) . Bundle::PUBLIC_KEY;
     }
 
-    public function getFullChainCertificatePath(string $basename): string
+    public function getCertificatePath(string $directoryName): string
     {
-        return $this->getCertificateBasePath($basename) . Bundle::FULL_CHAIN_CERTIFICATE;
+        return $this->getCertificateBasePath($directoryName) . Bundle::CERTIFICATE;
+    }
+
+    public function getFullChainCertificatePath(string $directoryName): string
+    {
+        return $this->getCertificateBasePath($directoryName) . Bundle::FULL_CHAIN_CERTIFICATE;
     }
 }
