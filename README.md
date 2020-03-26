@@ -35,6 +35,7 @@ $client = new Client($accountKeysPath, $certificatesPath, false);
 
 * `$client->account()->create(array $emails)`
 * `$client->account()->get()`
+* `$client->account()->getOrCreate(array $emails)`
 * `$client->account()->update(array $emails)`
 * `$client->account()->keyRollover()`
 * `$client->account()->deactive()`
