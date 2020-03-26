@@ -1,8 +1,16 @@
 {
     "name": "misantron/letsencrypt-client",
-    "description": "",
+    "description": "LetsEncrypt client library for ACME v2",
     "type": "library",
     "license": "MIT",
+    "keywords": ["php", "letsencypt", "ssl-certificates", "acme", "client-library"],
+    "authors": [
+        {
+            "name": "Aleksandr Ivanov",
+            "email": "misantron@gmail.com",
+            "role": "developer"
+        }
+    ],
     "require": {
         "php": "^7.2",
         "ext-openssl": "*",
