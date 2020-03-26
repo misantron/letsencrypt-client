@@ -70,6 +70,11 @@ final class Key
         }
     }
 
+    public function getType(): KeyType
+    {
+        return $this->type;
+    }
+
     private function setLength(RSAKeyLength $length): self
     {
         $this->length = $length;

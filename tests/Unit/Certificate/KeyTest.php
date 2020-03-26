@@ -14,7 +14,6 @@ namespace LetsEncrypt\Tests\Unit\Certificate;
 
 use LetsEncrypt\Certificate\Key;
 use LetsEncrypt\Enum\ECKeyAlgorithm;
-use LetsEncrypt\Enum\KeyType;
 use LetsEncrypt\Enum\RSAKeyLength;
 use LetsEncrypt\Tests\TestCase;
 
@@ -24,7 +23,7 @@ class KeyTest extends TestCase
     {
         $key = Key::rsa(RSAKeyLength::bit4096());
 
-        $this->assertPropertyInstanceOf(KeyType::class, 'type', $key);
+        $this->assertSame('rsa', $key->getType()->getValue());
         $this->assertPropertyInstanceOf(RSAKeyLength::class, 'length', $key);
         $this->assertPropertyNull('algorithm', $key);
     }
@@ -33,7 +32,7 @@ class KeyTest extends TestCase
     {
         $key = Key::ec(ECKeyAlgorithm::prime256v1());
 
-        $this->assertPropertyInstanceOf(KeyType::class, 'type', $key);
+        $this->assertSame('ec', $key->getType()->getValue());
         $this->assertPropertyInstanceOf(ECKeyAlgorithm::class, 'algorithm', $key);
         $this->assertPropertyNull('length', $key);
     }

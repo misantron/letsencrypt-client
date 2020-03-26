@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace LetsEncrypt\Certificate;
 
 use LetsEncrypt\Enum\ECKeyAlgorithm;
+use LetsEncrypt\Enum\KeyType;
 use LetsEncrypt\Enum\RSAKeyLength;
 use LetsEncrypt\Helper\KeyGenerator;
 
@@ -64,6 +65,11 @@ final class Certificate
     public function getNotAfter(): string
     {
         return $this->notAfter !== null ? $this->notAfter->format(DATE_RFC3339) : '';
+    }
+
+    public function getKeyType(): KeyType
+    {
+        return $this->key->getType();
     }
 
     public function generate(KeyGenerator $keyGenerator, string $privateKeyPath, string $publicKeyPath): void

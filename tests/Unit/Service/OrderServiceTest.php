@@ -20,6 +20,7 @@ use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Authorization;
 use LetsEncrypt\Entity\Order;
 use LetsEncrypt\Enum\ECKeyAlgorithm;
+use LetsEncrypt\Enum\KeyType;
 use LetsEncrypt\Enum\RSAKeyLength;
 use LetsEncrypt\Exception\EnvironmentException;
 use LetsEncrypt\Helper\Base64SafeEncoder;
@@ -52,26 +53,34 @@ class OrderServiceTest extends ApiClientTestCase
         parent::tearDownAfterClass();
 
         // test domains list
-        $domains = ['example.org', 'example.net'];
+        $domains = [
+            'example.org' => ['rsa', 'ec'],
+            'example.net' => ['rsa', 'ec'],
+        ];
 
-        foreach ($domains as $domain) {
-            // cleanup certificate directory
-            $certificateDirectoryPath = static::getKeysPath() . $domain . DIRECTORY_SEPARATOR;
-            if (!is_dir($certificateDirectoryPath)) {
-                continue;
-            }
-            $filesList = scandir($certificateDirectoryPath);
-            if ($filesList === false) {
-                continue;
-            }
-            // remove all files from directory
-            array_walk($filesList, static function (string $file) use ($certificateDirectoryPath) {
-                if (is_file($certificateDirectoryPath . $file)) {
-                    unlink($certificateDirectoryPath . $file);
+        foreach ($domains as $domain => $keyTypes) {
+            // search and cleanup directory for each possible key type
+            foreach ($keyTypes as $type) {
+                $directoryName = OrderService::getDomainDirectoryName($domain, $type);
+
+                // cleanup certificate directory
+                $certificateDirectoryPath = static::getKeysPath() . $directoryName . DIRECTORY_SEPARATOR;
+                if (!is_dir($certificateDirectoryPath)) {
+                    continue;
                 }
-            });
-            // finally remove empty directory
-            rmdir($certificateDirectoryPath);
+                $filesList = scandir($certificateDirectoryPath);
+                if ($filesList === false) {
+                    continue;
+                }
+                // remove all files from directory
+                array_walk($filesList, static function (string $file) use ($certificateDirectoryPath) {
+                    if (is_file($certificateDirectoryPath . $file)) {
+                        unlink($certificateDirectoryPath . $file);
+                    }
+                });
+                // finally remove empty directory
+                rmdir($certificateDirectoryPath);
+            }
         }
 
         // remove account key pair
@@ -110,11 +119,7 @@ class OrderServiceTest extends ApiClientTestCase
             'www.example.org',
             'example.org',
         ];
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
+        $account = $this->getAccount();
         $certificate = Certificate::createWithRSAKey(RSAKeyLength::bit4096());
 
         $connector = $this->createConnector();
@@ -148,14 +153,16 @@ class OrderServiceTest extends ApiClientTestCase
         $service = $this->createService($connector);
         $order = $service->create($account, $domain, $subjects, $certificate);
 
-        $this->assertDirectoryExists(static::getKeysPath() . $domain);
-        $this->assertFileExists($service->getOrderFilePath($domain));
-        $this->assertFileExists($service->getPrivateKeyPath($domain));
-        $this->assertFileExists($service->getPublicKeyPath($domain));
+        $directoryName = OrderService::getDomainDirectoryName($domain, $certificate->getKeyType()->getValue());
+
+        $this->assertDirectoryExists(static::getKeysPath() . $directoryName);
+        $this->assertFileExists($service->getOrderFilePath($directoryName));
+        $this->assertFileExists($service->getPrivateKeyPath($directoryName));
+        $this->assertFileExists($service->getPublicKeyPath($directoryName));
 
         $this->assertTrue($order->isPending());
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo', $order->getUrl());
-        $this->assertSame($order->getUrl(), file_get_contents($service->getOrderFilePath($domain)));
+        $this->assertSame($order->getUrl(), file_get_contents($service->getOrderFilePath($directoryName)));
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo/finalize', $order->getFinalizeUrl());
         $this->assertSame(['www.example.org', 'example.org'], $order->getIdentifiers());
         $this->assertCount(2, $order->getAuthorizations());
@@ -164,11 +171,14 @@ class OrderServiceTest extends ApiClientTestCase
     public function testGetOrCreate(): void
     {
         $domain = 'example.net';
+        $certificate = Certificate::createWithECKey(ECKeyAlgorithm::prime256v1());
+
+        $directoryName = OrderService::getDomainDirectoryName($domain, $certificate->getKeyType()->getValue());
 
         // create domain directory and store order file
-        mkdir(static::getKeysPath() . $domain);
+        mkdir(static::getKeysPath() . $directoryName);
         FileSystem::writeFileContent(
-            static::getKeysPath() . $domain . DIRECTORY_SEPARATOR . Bundle::ORDER,
+            static::getKeysPath() . $directoryName . DIRECTORY_SEPARATOR . Bundle::ORDER,
             'https://example.com/acme/order/4E16bbL5iSw'
         );
 
@@ -176,12 +186,7 @@ class OrderServiceTest extends ApiClientTestCase
             'www.example.net',
             'example.net',
         ];
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
-        $certificate = Certificate::createWithECKey(ECKeyAlgorithm::prime256v1());
+        $account = $this->getAccount();
 
         $connector = $this->createConnector();
 
@@ -219,14 +224,14 @@ class OrderServiceTest extends ApiClientTestCase
         $service = $this->createService($connector);
         $order = $service->getOrCreate($account, $domain, $subjects, $certificate);
 
-        $this->assertDirectoryExists(static::getKeysPath() . $domain);
-        $this->assertFileExists($service->getOrderFilePath($domain));
-        $this->assertFileExists($service->getPrivateKeyPath($domain));
-        $this->assertFileExists($service->getPublicKeyPath($domain));
+        $this->assertDirectoryExists(static::getKeysPath() . $directoryName);
+        $this->assertFileExists($service->getOrderFilePath($directoryName));
+        $this->assertFileExists($service->getPrivateKeyPath($directoryName));
+        $this->assertFileExists($service->getPublicKeyPath($directoryName));
 
         $this->assertTrue($order->isPending());
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo', $order->getUrl());
-        $this->assertSame($order->getUrl(), file_get_contents($service->getOrderFilePath($domain)));
+        $this->assertSame($order->getUrl(), file_get_contents($service->getOrderFilePath($directoryName)));
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo/finalize', $order->getFinalizeUrl());
         $this->assertSame(['www.example.net', 'example.net'], $order->getIdentifiers());
         $this->assertCount(2, $order->getAuthorizations());
@@ -237,11 +242,7 @@ class OrderServiceTest extends ApiClientTestCase
      */
     public function testGetPendingAuthorizations(): void
     {
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
+        $account = $this->getAccount();
         $order = new Order(
             [
                 'identifiers' => [
@@ -336,7 +337,7 @@ class OrderServiceTest extends ApiClientTestCase
         $this->appendResponseFixture('authorization2.pending.response.json');
 
         $service = $this->createService($connector);
-        $order = $service->get($domain, $subjects);
+        $order = $service->get($domain, $subjects, KeyType::rsa());
 
         $this->assertTrue($order->isPending());
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo', $order->getUrl());
@@ -352,11 +353,7 @@ class OrderServiceTest extends ApiClientTestCase
         $token = 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA';
         $digest = 'CjpcsYdnOxQd1jMkqWOWzcGTumF_k-erQCFFiYqofcM';
 
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
+        $account = $this->getAccount();
         $order = new Order(
             [
                 'identifiers' => [
@@ -441,11 +438,7 @@ class OrderServiceTest extends ApiClientTestCase
     {
         $identifier = 'example.org';
 
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
+        $account = $this->getAccount();
         $order = new Order(
             [
                 'identifiers' => [
@@ -524,11 +517,7 @@ class OrderServiceTest extends ApiClientTestCase
     {
         $domain = 'example.org';
 
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
+        $account = $this->getAccount();
         $order = new Order(
             [
                 'status' => 'ready',
@@ -587,11 +576,15 @@ class OrderServiceTest extends ApiClientTestCase
         $this->appendResponseFixture('certificate.response');
         $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'IXVHDyxIRGcTE0VSblhPzw']);
 
-        $service = $this->createService($connector);
-        $service->getCertificate($account, $order, $domain);
+        $keyType = KeyType::rsa();
 
-        $this->assertFileExists($service->getCertificatePath($domain));
-        $this->assertFileExists($service->getFullChainCertificatePath($domain));
+        $service = $this->createService($connector);
+        $service->getCertificate($account, $order, $domain, $keyType);
+
+        $directoryName = OrderService::getDomainDirectoryName($domain, $keyType->getValue());
+
+        $this->assertFileExists($service->getCertificatePath($directoryName));
+        $this->assertFileExists($service->getFullChainCertificatePath($directoryName));
     }
 
     /**
@@ -601,18 +594,14 @@ class OrderServiceTest extends ApiClientTestCase
     {
         $domain = 'example.org';
 
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
+        $account = $this->getAccount();
 
         $connector = $this->createConnector();
 
         $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'lXfyFzi6238tfPQRwgfmPU']);
 
         $service = $this->createService($connector);
-        $result = $service->revokeCertificate($account, $domain, RevocationReason::keyCompromise());
+        $result = $service->revokeCertificate($account, $domain, KeyType::rsa(), RevocationReason::keyCompromise());
 
         $this->assertTrue($result);
     }
@@ -624,11 +613,7 @@ class OrderServiceTest extends ApiClientTestCase
     {
         $domain = 'example.org';
 
-        $account = new Account(
-            [],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
+        $account = $this->getAccount();
 
         $connector = $this->createConnector();
 
@@ -639,7 +624,7 @@ class OrderServiceTest extends ApiClientTestCase
         );
 
         $service = $this->createService($connector);
-        $result = $service->revokeCertificate($account, $domain);
+        $result = $service->revokeCertificate($account, $domain, KeyType::rsa());
 
         $this->assertFalse($result);
     }
@@ -654,5 +639,19 @@ class OrderServiceTest extends ApiClientTestCase
         $service->setKeyGenerator(new KeyGenerator());
 
         return $service;
+    }
+
+    private function getAccount(): Account
+    {
+        return new Account(
+            [
+                'contact' => [
+                    'info@example.com',
+                    'tech@example.com',
+                ],
+            ],
+            'https://example.com/acme/acct/evOfKhNU60wg',
+            static::getKeysPath() . Bundle::PRIVATE_KEY
+        );
     }
 }

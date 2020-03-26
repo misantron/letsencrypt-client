@@ -41,14 +41,14 @@ $client = new Client($accountKeysPath, $certificatesPath, false);
 ### Order methods
 
 * `$client->order()->create(Account $account, string $basename, array $subjects, Certificate $certificate)`
-* `$client->order()->get(string $basename, array $subjects)`
+* `$client->order()->get(string $basename, array $subjects, KeyType $keyType)`
 * `$client->order()->getOrCreate(Account $account, string $basename, array $subjects, Certificate $certificate)`
 * `$client->order()->getPendingHttpAuthorizations(Account $account, Order $order)`
 * `$client->order()->getPendingDnsAuthorizations(Account $account, Order $order)`
 * `$client->order()->verifyPendingHttpAuthorizations(Account $account, Order $order, string $identifier)`
 * `$client->order()->verifyPendingDnsAuthorizations(Account $account, Order $order, string $identifier)`
-* `$client->order()->getCertificate(Account $account, Order $order, string $basename, string $csr)`
-* `$client->order()->revokeCertificate(Account $account, string $basename, RevocationReason $reason)`
+* `$client->order()->getCertificate(Account $account, Order $order, string $basename, KeyType $keyType)`
+* `$client->order()->revokeCertificate(Account $account, string $basename, KeyType $keyType, RevocationReason $reason)`
 
 ## Advanced usage
 
