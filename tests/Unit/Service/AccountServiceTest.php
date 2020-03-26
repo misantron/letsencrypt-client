@@ -130,6 +130,46 @@ class AccountServiceTest extends ApiClientTestCase
     }
 
     /**
+     * @depends testCreate
+     */
+    public function testGetOrCreate(): void
+    {
+        $emails = [
+            'cert-admin@example.org',
+            'admin@example.org',
+        ];
+
+        $connector = $this->createConnector();
+
+        $this->appendResponseFixture(
+            'account.get.response.json',
+            200,
+            [
+                'Content-Type' => 'application/json',
+                'Replay-Nonce' => 'D8s4D2mLs8Vn-goWuPQeKA',
+                'Link' => '<https://example.com/acme/directory>;rel="index"',
+                'Location' => 'https://example.com/acme/acct/evOfKhNU60wg',
+            ],
+            [
+                'onlyReturnExisting' => true,
+            ]
+        );
+
+        $service = $this->createService($connector);
+        $account = $service->getOrCreate($emails);
+
+        $this->assertSame('https://example.com/acme/acct/evOfKhNU60wg', $account->getUrl());
+        $this->assertSame([
+            'mailto:cert-admin@example.org',
+            'mailto:admin@example.org',
+        ], $account->contact);
+        $this->assertSame('46.231.212.68', $account->initialIp);
+        $this->assertTrue($account->isValid());
+
+        $this->assertCount(3, $this->getRequestHistory());
+    }
+
+    /**
      * @depends testGet
      */
     public function testUpdate(): void

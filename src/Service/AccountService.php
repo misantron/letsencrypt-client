@@ -45,6 +45,14 @@ class AccountService
         return $this->getAccount();
     }
 
+    public function getOrCreate(array $emails): Account
+    {
+        if (file_exists($this->getPrivateKeyPath()) && file_exists($this->getPublicKeyPath())) {
+            return $this->get();
+        }
+        return $this->create($emails);
+    }
+
     public function create(array $emails): Account
     {
         $this->keyGenerator->rsa($this->getPrivateKeyPath(), $this->getPublicKeyPath());
