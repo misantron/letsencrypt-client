@@ -342,6 +342,10 @@ class OrderService
     {
         $basePath = $this->getCertificateBasePath($directoryName);
 
+        if (!is_dir($basePath)) {
+            return;
+        }
+
         $filesList = scandir($basePath);
         if ($filesList !== false) {
             array_walk($filesList, static function (string $file) use ($basePath) {
