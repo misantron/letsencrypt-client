@@ -123,7 +123,12 @@ class OrderService
             throw new OrderException('Unable to get order url');
         }
 
-        $response = $this->connector->get($orderUrl);
+        $response = $this->connector->signedKIDRequest(
+            $account->getUrl(),
+            $orderUrl,
+            [],
+            $account->getPrivateKeyPath()
+        );
 
         $order = $this->createOrderFromResponse($account, $response, $orderUrl);
 

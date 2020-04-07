@@ -349,7 +349,12 @@ class OrderServiceTest extends ApiClientTestCase
         $account = $this->getAccount();
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('order.create.org.response.json');
+        $this->appendResponseFixture(
+            'order.create.org.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()],
+            ''
+        );
         $this->appendResponseFixture(
             'authorization1.pending.response.json',
             200,
