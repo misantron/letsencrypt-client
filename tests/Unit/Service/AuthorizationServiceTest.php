@@ -77,10 +77,18 @@ class AuthorizationServiceTest extends ApiClientTestCase
         $account = $this->getAccount();
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('authorization1.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()],
+            ''
+        );
+        $this->appendResponseFixture(
+            'authorization2.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()],
+            ''
+        );
 
         $service = new AuthorizationService();
         $service->setConnector($connector);

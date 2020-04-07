@@ -90,7 +90,7 @@ abstract class ApiClientTestCase extends TestCase
         string $fileName = null,
         int $status = 200,
         array $headers = ['Content-Type' => 'application/json'],
-        ?array $expectedPayload = null,
+        $expectedPayload = null,
         string $expectedUri = null
     ): void {
         $content = $fileName === null ? '' : file_get_contents(__DIR__ . '/fixtures/' . $fileName);
@@ -146,13 +146,16 @@ abstract class ApiClientTestCase extends TestCase
         return $nonce;
     }
 
-    private function assertRequestPayload(RequestInterface $request, array $expected): void
+    private function assertRequestPayload(RequestInterface $request, $expected): void
     {
         $body = json_decode($request->getBody()->getContents(), true);
         $payload = $this->base64Encoder->decode($body['payload']);
 
+        // encode expected array data before assertion
+        $expected = is_array($expected) ? json_encode($expected) : $expected;
+
         $this->assertIsString($payload);
-        $this->assertSame(json_encode($expected), $payload);
+        $this->assertSame($expected, $payload);
     }
 
     private function assertRequestUri(RequestInterface $request, string $expected): void

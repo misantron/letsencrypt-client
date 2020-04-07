@@ -147,10 +147,16 @@ class OrderServiceTest extends ApiClientTestCase
                 'notAfter' => '',
             ]
         );
-        $this->appendResponseFixture('authorization1.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization2.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         $service = $this->createService($connector);
         $order = $service->create($account, $domain, $subjects, $certificate);
@@ -220,10 +226,16 @@ class OrderServiceTest extends ApiClientTestCase
                 'notAfter' => '',
             ]
         );
-        $this->appendResponseFixture('authorization1.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization2.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         $service = $this->createService($connector);
         $order = $service->getOrCreate($account, $domain, $subjects, $certificate);
@@ -338,10 +350,16 @@ class OrderServiceTest extends ApiClientTestCase
         $connector = $this->createConnector();
 
         $this->appendResponseFixture('order.create.org.response.json');
-        $this->appendResponseFixture('authorization1.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization2.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         $service = $this->createService($connector);
         $order = $service->get($account, $domain, $subjects, KeyType::rsa());
@@ -416,10 +434,16 @@ class OrderServiceTest extends ApiClientTestCase
                 'keyAuthorization' => $token . '.' . $digest,
             ]
         );
-        $this->appendResponseFixture('authorization1.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization1.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization1.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         $service = $this->createService($connector);
         $result = $service->verifyPendingHttpAuthorization($account, $order, $identifier);
@@ -485,13 +509,21 @@ class OrderServiceTest extends ApiClientTestCase
 
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture('challenge.dns.response.json', 200, [
-            'Replay-Nonce' => 'CGf81JWBsq8QyIgPCi9Q9X',
-        ]);
-        $this->appendResponseFixture('authorization1.pending.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization1.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'challenge.dns.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization1.pending.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization1.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         $dnsChecker = $this->createDnsCheckerMock($connector);
         $service = $this->createService($connector, $dnsChecker);
@@ -565,31 +597,55 @@ class OrderServiceTest extends ApiClientTestCase
             'Link' => '<https://example.com/acme/directory>;rel="index"',
             'Location' => 'https://example.com/acme/order/4E16bbL5iSw',
         ]);
-        $this->appendResponseFixture('authorization1.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization2.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         // 1st try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
-        $this->appendResponseFixture('authorization1.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization2.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         // 2nd try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
-        $this->appendResponseFixture('authorization1.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization2.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         // 3rd try: order is valid
         $this->appendResponseFixture('order.valid.response.json');
-        $this->appendResponseFixture('authorization1.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
-        $this->appendResponseFixture('authorization2.valid.response.json');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
+        $this->appendResponseFixture(
+            'authorization1.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
+        $this->appendResponseFixture(
+            'authorization2.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
 
         // get certificate
         $this->appendResponseFixture('certificate.response');

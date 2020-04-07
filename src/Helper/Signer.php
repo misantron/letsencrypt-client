@@ -110,7 +110,10 @@ class Signer implements SignerInterface
 
     private function sign(array $protected, array $payload, $privateKey): array
     {
-        $payloadEncoded = $this->base64Encoder->encode(str_replace('\\/', '/', json_encode($payload)));
+        // empty payload array must be encoded to empty string
+        $payloadEncoded = $payload !== [] ?
+            $this->base64Encoder->encode(str_replace('\\/', '/', json_encode($payload))) :
+            '';
         $protectedEncoded = $this->base64Encoder->encode(json_encode($protected));
 
         openssl_sign($protectedEncoded . '.' . $payloadEncoded, $signature, $privateKey, OPENSSL_ALGO_SHA256);
