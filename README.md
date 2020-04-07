@@ -43,7 +43,7 @@ $client = new Client($accountKeysPath, $certificatesPath, false);
 ### Order methods
 
 * `$client->order()->create(Account $account, string $basename, array $subjects, Certificate $certificate)`
-* `$client->order()->get(string $basename, array $subjects, KeyType $keyType)`
+* `$client->order()->get(Account $account, string $basename, array $subjects, KeyType $keyType)`
 * `$client->order()->getOrCreate(Account $account, string $basename, array $subjects, Certificate $certificate)`
 * `$client->order()->getPendingHttpAuthorizations(Account $account, Order $order)`
 * `$client->order()->getPendingDnsAuthorizations(Account $account, Order $order)`
