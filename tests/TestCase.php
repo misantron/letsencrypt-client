@@ -12,9 +12,13 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Tests;
 
+use LetsEncrypt\Tests\Mixin\EntityMocksTrait;
+use LetsEncrypt\Tests\Mixin\ObjectPropertyAssertTrait;
+
 abstract class TestCase extends \PHPUnit\Framework\TestCase
 {
-    use AssertObjectPropertyTrait;
+    use EntityMocksTrait;
+    use ObjectPropertyAssertTrait;
 
     /**
      * @var string

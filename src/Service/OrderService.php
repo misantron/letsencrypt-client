@@ -102,13 +102,13 @@ class OrderService
             $this->getPublicKeyPath($directoryName)
         );
 
-        return $this->createOrderFromResponse($response, $orderUrl);
+        return $this->createOrderFromResponse($account, $response, $orderUrl);
     }
 
     /**
      * @throws OrderException
      */
-    public function get(string $basename, array $subjects, KeyType $keyType): Order
+    public function get(Account $account, string $basename, array $subjects, KeyType $keyType): Order
     {
         $directoryName = self::getDomainDirectoryName($basename, $keyType->getValue());
 
@@ -125,7 +125,7 @@ class OrderService
 
         $response = $this->connector->get($orderUrl);
 
-        $order = $this->createOrderFromResponse($response, $orderUrl);
+        $order = $this->createOrderFromResponse($account, $response, $orderUrl);
 
         if ($order->isInvalid()) {
             throw new OrderException('Order has invalid status');
@@ -142,7 +142,7 @@ class OrderService
         $directoryName = self::getDomainDirectoryName($basename, $certificate->getKeyType()->getValue());
 
         try {
-            $order = $this->get($basename, $subjects, $certificate->getKeyType());
+            $order = $this->get($account, $basename, $subjects, $certificate->getKeyType());
         } catch (\Throwable $e) {
             $this->cleanupFiles($directoryName);
             $order = $this->create($account, $basename, $subjects, $certificate);
@@ -199,7 +199,7 @@ class OrderService
         while ($order->isProcessing()) {
             sleep(5);
             $response = $this->connector->get($order->getUrl());
-            $order = $this->createOrderFromResponse($response, $order->getUrl());
+            $order = $this->createOrderFromResponse($account, $response, $order->getUrl());
         }
 
         if (!$order->isValid()) {
@@ -310,14 +310,14 @@ class OrderService
             $account->getPrivateKeyPath()
         );
 
-        return $this->createOrderFromResponse($response, $order->getUrl());
+        return $this->createOrderFromResponse($account, $response, $order->getUrl());
     }
 
-    private function createOrderFromResponse(Response $response, string $url): Order
+    private function createOrderFromResponse(Account $account, Response $response, string $url): Order
     {
         $data = $response->getDecodedContent();
         // fetch authorizations data
-        $data['authorizations'] = $this->authorizationService->getAuthorizations($data['authorizations']);
+        $data['authorizations'] = $this->authorizationService->getAuthorizations($account, $data['authorizations']);
 
         return new Order($data, $url);
     }

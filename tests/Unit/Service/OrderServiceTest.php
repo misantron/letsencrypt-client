@@ -148,7 +148,9 @@ class OrderServiceTest extends ApiClientTestCase
             ]
         );
         $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $service = $this->createService($connector);
         $order = $service->create($account, $domain, $subjects, $certificate);
@@ -219,7 +221,9 @@ class OrderServiceTest extends ApiClientTestCase
             ]
         );
         $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $service = $this->createService($connector);
         $order = $service->getOrCreate($account, $domain, $subjects, $certificate);
@@ -330,14 +334,17 @@ class OrderServiceTest extends ApiClientTestCase
             'example.org',
         ];
 
+        $account = $this->getAccount();
         $connector = $this->createConnector();
 
         $this->appendResponseFixture('order.create.org.response.json');
         $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $service = $this->createService($connector);
-        $order = $service->get($domain, $subjects, KeyType::rsa());
+        $order = $service->get($account, $domain, $subjects, KeyType::rsa());
 
         $this->assertTrue($order->isPending());
         $this->assertSame('https://example.com/acme/order/TOlocE8rfgo', $order->getUrl());
@@ -410,7 +417,9 @@ class OrderServiceTest extends ApiClientTestCase
             ]
         );
         $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $service = $this->createService($connector);
         $result = $service->verifyPendingHttpAuthorization($account, $order, $identifier);
@@ -480,7 +489,9 @@ class OrderServiceTest extends ApiClientTestCase
             'Replay-Nonce' => 'CGf81JWBsq8QyIgPCi9Q9X',
         ]);
         $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $dnsChecker = $this->createDnsCheckerMock($connector);
         $service = $this->createService($connector, $dnsChecker);
@@ -555,26 +566,34 @@ class OrderServiceTest extends ApiClientTestCase
             'Location' => 'https://example.com/acme/order/4E16bbL5iSw',
         ]);
         $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         // 1st try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
         $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         // 2nd try: order still processing
         $this->appendResponseFixture('order.processing.response.json');
         $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         // 3rd try: order is valid
         $this->appendResponseFixture('order.valid.response.json');
         $this->appendResponseFixture('authorization1.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.valid.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         // get certificate
         $this->appendResponseFixture('certificate.response');
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'IXVHDyxIRGcTE0VSblhPzw']);
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $keyType = KeyType::rsa();
 
@@ -598,7 +617,7 @@ class OrderServiceTest extends ApiClientTestCase
 
         $connector = $this->createConnector();
 
-        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => 'lXfyFzi6238tfPQRwgfmPU']);
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $service = $this->createService($connector);
         $result = $service->revokeCertificate($account, $domain, KeyType::rsa(), RevocationReason::keyCompromise());
@@ -620,7 +639,7 @@ class OrderServiceTest extends ApiClientTestCase
         $this->appendResponseFixture(
             'certificate.already.revoked.response.json',
             400,
-            ['Replay-Nonce' => 'lXfyFzi6238tfPQRwgfmPU']
+            ['Replay-Nonce' => $this->generateNonce()]
         );
 
         $service = $this->createService($connector);
@@ -639,19 +658,5 @@ class OrderServiceTest extends ApiClientTestCase
         $service->setKeyGenerator(new KeyGenerator());
 
         return $service;
-    }
-
-    private function getAccount(): Account
-    {
-        return new Account(
-            [
-                'contact' => [
-                    'info@example.com',
-                    'tech@example.com',
-                ],
-            ],
-            'https://example.com/acme/acct/evOfKhNU60wg',
-            static::getKeysPath() . Bundle::PRIVATE_KEY
-        );
     }
 }

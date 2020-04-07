@@ -35,10 +35,10 @@ class AuthorizationService
     /**
      * @return Authorization[]
      */
-    public function getAuthorizations(array $urls): array
+    public function getAuthorizations(Account $account, array $urls): array
     {
-        return array_map(function (string $url) {
-            return $this->updateAuthorization($url);
+        return array_map(function (string $url) use ($account) {
+            return $this->updateAuthorization($account, $url);
         }, $urls);
     }
 
@@ -114,7 +114,7 @@ class AuthorizationService
                         if ($response->isStatusOk()) {
                             while ($authorization->isPending()) {
                                 sleep(1);
-                                $authorization = $this->updateAuthorization($authorization->getUrl());
+                                $authorization = $this->updateAuthorization($account, $authorization->getUrl());
                             }
 
                             return true;
@@ -153,7 +153,7 @@ class AuthorizationService
                         if ($response->isStatusOk()) {
                             while ($authorization->isPending()) {
                                 sleep(1);
-                                $authorization = $this->updateAuthorization($authorization->getUrl());
+                                $authorization = $this->updateAuthorization($account, $authorization->getUrl());
                             }
 
                             return true;
@@ -185,9 +185,14 @@ class AuthorizationService
             ->verify($domain, $dnsDigest);
     }
 
-    private function updateAuthorization(string $url): Authorization
+    private function updateAuthorization(Account $account, string $url): Authorization
     {
-        $response = $this->connector->get($url);
+        $response = $this->connector->signedKIDRequest(
+            $account->getUrl(),
+            $url,
+            [],
+            $account->getPrivateKeyPath()
+        );
 
         return new Authorization($response->getDecodedContent(), $url);
     }

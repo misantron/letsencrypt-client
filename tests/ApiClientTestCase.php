@@ -135,6 +135,17 @@ abstract class ApiClientTestCase extends TestCase
         return new Connector(true, null, $this->getHttpClientMock(), $signer);
     }
 
+    protected function generateNonce(): string
+    {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $length = strlen($characters);
+        $nonce = '';
+        for ($i = 0; $i < 22; ++$i) {
+            $nonce .= $characters[random_int(0, $length - 1)];
+        }
+        return $nonce;
+    }
+
     private function assertRequestPayload(RequestInterface $request, array $expected): void
     {
         $body = json_decode($request->getBody()->getContents(), true);

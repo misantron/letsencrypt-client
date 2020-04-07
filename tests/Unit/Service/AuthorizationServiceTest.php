@@ -12,7 +12,9 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Tests\Unit\Service;
 
+use LetsEncrypt\Certificate\Bundle;
 use LetsEncrypt\Entity\Authorization;
+use LetsEncrypt\Helper\KeyGenerator;
 use LetsEncrypt\Http\DnsCheckerInterface;
 use LetsEncrypt\Http\GooglePublicDNS;
 use LetsEncrypt\Service\AuthorizationService;
@@ -20,6 +22,31 @@ use LetsEncrypt\Tests\ApiClientTestCase;
 
 class AuthorizationServiceTest extends ApiClientTestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // generate account key pair
+        $keyGenerator = new KeyGenerator();
+        $keyGenerator->rsa(
+            static::getKeysPath() . Bundle::PRIVATE_KEY,
+            static::getKeysPath() . Bundle::PUBLIC_KEY
+        );
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        parent::tearDownAfterClass();
+
+        // remove account key pair
+        if (file_exists(static::getKeysPath() . Bundle::PRIVATE_KEY)) {
+            unlink(static::getKeysPath() . Bundle::PRIVATE_KEY);
+        }
+        if (file_exists(static::getKeysPath() . Bundle::PUBLIC_KEY)) {
+            unlink(static::getKeysPath() . Bundle::PUBLIC_KEY);
+        }
+    }
+
     public function testConstructor(): void
     {
         $service = new AuthorizationService();
@@ -47,14 +74,17 @@ class AuthorizationServiceTest extends ApiClientTestCase
             'https://example.com/acme/authz/PAniVnsZcis',
             'https://example.com/acme/authz/r4HqLzrSrpI',
         ];
+        $account = $this->getAccount();
         $connector = $this->createConnector();
 
         $this->appendResponseFixture('authorization1.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
         $this->appendResponseFixture('authorization2.pending.response.json');
+        $this->appendResponseFixture(null, 200, ['Replay-Nonce' => $this->generateNonce()]);
 
         $service = new AuthorizationService();
         $service->setConnector($connector);
-        $authorizations = $service->getAuthorizations($urls);
+        $authorizations = $service->getAuthorizations($account, $urls);
 
         $this->assertInstanceOf(Authorization::class, $authorizations[0]);
         $this->assertSame('https://example.com/acme/authz/PAniVnsZcis', $authorizations[0]->getUrl());

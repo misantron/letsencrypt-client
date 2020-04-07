@@ -10,9 +10,9 @@ declare(strict_types=1);
  * @license   https://github.com/misantron/letsencrypt-client/blob/master/LICENSE MIT License
  */
 
-namespace LetsEncrypt\Tests;
+namespace LetsEncrypt\Tests\Mixin;
 
-trait AssertObjectPropertyTrait
+trait ObjectPropertyAssertTrait
 {
     public function assertPropertySame($expected, string $attributeName, $actual): void
     {
