@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace LetsEncrypt\Entity;
 
-abstract class Entity
+abstract class Entity implements \JsonSerializable
 {
     private const STATUS_PENDING = 'pending';
     private const STATUS_VALID = 'valid';
@@ -57,5 +57,18 @@ abstract class Entity
     public function isProcessing(): bool
     {
         return $this->status === self::STATUS_PROCESSING;
+    }
+
+    public function jsonSerialize(): array
+    {
+        $reflect = new \ReflectionClass($this);
+
+        $output = [];
+        foreach ($reflect->getProperties() as $property) {
+            $property->setAccessible(true);
+            $output[$property->getName()] = $property->getValue($this);
+        }
+
+        return $output;
     }
 }

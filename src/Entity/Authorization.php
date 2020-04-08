@@ -40,6 +40,8 @@ final class Authorization extends Entity
 
     public function __construct(array $data, string $url)
     {
+        $this->wildcard = false;
+
         $data['challenges'] = array_map(static function (array $entry) {
             return new Challenge($entry);
         }, $data['challenges']);
