@@ -20,13 +20,13 @@ use LetsEncrypt\Certificate\RevocationReason;
 use LetsEncrypt\Entity\Account;
 use LetsEncrypt\Entity\Order;
 use LetsEncrypt\Enum\KeyType;
+use LetsEncrypt\Exception\CertificateException;
 use LetsEncrypt\Exception\EnvironmentException;
 use LetsEncrypt\Exception\FileIOException;
 use LetsEncrypt\Exception\OrderException;
 use LetsEncrypt\Helper\FileSystem;
 use LetsEncrypt\Helper\KeyGeneratorAwareTrait;
 use LetsEncrypt\Http\ConnectorAwareTrait;
-use LetsEncrypt\Http\Response;
 
 class OrderService
 {
@@ -102,7 +102,7 @@ class OrderService
             $this->getPublicKeyPath($directoryName)
         );
 
-        return $this->createOrderFromResponse($account, $response, $orderUrl);
+        return $this->createOrderFromResponse($account, $response->getDecodedContent(), $orderUrl);
     }
 
     /**
@@ -130,7 +130,7 @@ class OrderService
             $account->getPrivateKeyPath()
         );
 
-        $order = $this->createOrderFromResponse($account, $response, $orderUrl);
+        $order = $this->createOrderFromResponse($account, $response->getDecodedContent(), $orderUrl);
 
         if ($order->isInvalid()) {
             throw new OrderException('Order has invalid status');
@@ -203,8 +203,13 @@ class OrderService
 
         while ($order->isProcessing()) {
             sleep(5);
-            $response = $this->connector->get($order->getUrl());
-            $order = $this->createOrderFromResponse($account, $response, $order->getUrl());
+            $response = $this->connector->signedKIDRequest(
+                $account->getUrl(),
+                $order->getUrl(),
+                [],
+                $account->getPrivateKeyPath()
+            );
+            $order = $this->createOrderFromResponse($account, $response->getDecodedContent(), $order->getUrl());
         }
 
         if (!$order->isValid()) {
@@ -219,6 +224,39 @@ class OrderService
         );
 
         $this->extractAndStoreCertificates($directoryName, $response->getRawContent());
+    }
+
+    public function getCertificateContent(string $basename, KeyType $keyType): string
+    {
+        $directoryName = self::getDomainDirectoryName($basename, $keyType->getValue());
+
+        $fullChainCertificatePath = $this->getFullChainCertificatePath($directoryName);
+
+        Assert::fileExists($fullChainCertificatePath, 'Certificate file %s does not exist');
+        Assert::readable($fullChainCertificatePath, 'Certificate file %s is not readable');
+
+        try {
+            $content = FileSystem::readFileContent($fullChainCertificatePath);
+        } catch (FileIOException $e) {
+            throw new CertificateException('Unable to get certificate content');
+        }
+
+        return $content;
+    }
+
+    public function getCertificateExpirationDate(string $basename, KeyType $keyType): \DateTime
+    {
+        $content = $this->getCertificateContent($basename, $keyType);
+
+        $info = openssl_x509_parse($content);
+        if ($info === false) {
+            throw new CertificateException('Unable to parse certificate info');
+        }
+
+        $expirationDate = new \DateTime();
+        $expirationDate->setTimestamp($info['validTo_time_t']);
+
+        return $expirationDate;
     }
 
     public function revokeCertificate(
@@ -315,12 +353,11 @@ class OrderService
             $account->getPrivateKeyPath()
         );
 
-        return $this->createOrderFromResponse($account, $response, $order->getUrl());
+        return $this->createOrderFromResponse($account, $response->getDecodedContent(), $order->getUrl());
     }
 
-    private function createOrderFromResponse(Account $account, Response $response, string $url): Order
+    private function createOrderFromResponse(Account $account, array $data, string $url): Order
     {
-        $data = $response->getDecodedContent();
         // fetch authorizations data
         $data['authorizations'] = $this->authorizationService->getAuthorizations($account, $data['authorizations']);
 

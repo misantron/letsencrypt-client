@@ -50,6 +50,8 @@ $client = new Client($accountKeysPath, $certificatesPath, false);
 * `$client->order()->verifyPendingHttpAuthorizations(Account $account, Order $order, string $identifier)`
 * `$client->order()->verifyPendingDnsAuthorizations(Account $account, Order $order, string $identifier)`
 * `$client->order()->getCertificate(Account $account, Order $order, string $basename, KeyType $keyType)`
+* `$client->order()->getCertificateContent(string $basename, KeyType $keyType)`
+* `$client->order()->getCertificateExpirationDate(string $basename, KeyType $keyType)`
 * `$client->order()->revokeCertificate(Account $account, string $basename, KeyType $keyType, RevocationReason $reason)`
 
 ## Advanced usage

@@ -614,7 +614,11 @@ class OrderServiceTest extends ApiClientTestCase
         );
 
         // 1st try: order still processing
-        $this->appendResponseFixture('order.processing.response.json');
+        $this->appendResponseFixture(
+            'order.processing.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
         $this->appendResponseFixture(
             'authorization1.valid.response.json',
             200,
@@ -627,7 +631,11 @@ class OrderServiceTest extends ApiClientTestCase
         );
 
         // 2nd try: order still processing
-        $this->appendResponseFixture('order.processing.response.json');
+        $this->appendResponseFixture(
+            'order.processing.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
         $this->appendResponseFixture(
             'authorization1.valid.response.json',
             200,
@@ -640,7 +648,11 @@ class OrderServiceTest extends ApiClientTestCase
         );
 
         // 3rd try: order is valid
-        $this->appendResponseFixture('order.valid.response.json');
+        $this->appendResponseFixture(
+            'order.valid.response.json',
+            200,
+            ['Replay-Nonce' => $this->generateNonce()]
+        );
         $this->appendResponseFixture(
             'authorization1.valid.response.json',
             200,
@@ -669,6 +681,22 @@ class OrderServiceTest extends ApiClientTestCase
 
     /**
      * @depends testGetCertificate
+     */
+    public function testGetCertificateExpirationDate(): void
+    {
+        $domain = 'example.org';
+        $keyType = KeyType::rsa();
+
+        $connector = $this->createConnector();
+
+        $service = $this->createService($connector);
+        $expirationDate = $service->getCertificateExpirationDate($domain, $keyType);
+
+        $this->assertSame('2036-05-23', $expirationDate->format('Y-m-d'));
+    }
+
+    /**
+     * @depends testGetCertificateExpirationDate
      */
     public function testRevokeCertificate(): void
     {
