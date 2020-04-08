@@ -31,15 +31,11 @@ class ClientTest extends TestCase
 
     protected function setUp(): void
     {
-        parent::setUp();
-
         $this->root = vfsStream::setup('root', null, ['_account' => []]);
     }
 
     protected function tearDown(): void
     {
-        parent::tearDown();
-
         $this->root = null;
     }
 
